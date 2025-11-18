@@ -50,7 +50,7 @@ jobs:
 In your package's `.github/workflows/release.yml`:
 
 ```yaml
-name: Release
+name: Release to GitLab
 
 on:
   workflow_run:
@@ -58,12 +58,20 @@ on:
     types: [completed]
     branches:
       - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write  # Required for GitHub releases
+  actions: read    # Required to download artifacts from CI
 
 jobs:
   release:
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/release.yml@v1
     with:
-      use-nox-publish: true  # Use nox for publishing
+      python-version: "3.12"
+      use-nox-publish: true
+    secrets:
+      GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
 ```
 
 That's it! Your package now has:
@@ -110,10 +118,19 @@ That's it! Your package now has:
 - `python-version` (default: `"3.12"`) - Python version for build
 - `use-nox-publish` (default: `true`) - Use `uvx nox -s publish` instead of direct twine
 
-**Required secrets/variables:**
-- `GITLAB_API_TOKEN` - For publishing (Maintainer role) - **repository secret**
-- `GITLAB_API_READ_TOKEN` - For installing dependencies - **repository variable**
-- `GITLAB_PACKAGE_REGISTRY_URL` - Registry URL - **repository variable**
+**Required secrets:**
+
+- `GITLAB_API_TOKEN` - For publishing packages (Maintainer role) - **repository secret**
+
+**Required variables:**
+
+- `GITLAB_API_READ_TOKEN` - For installing dependencies (Developer role) - **repository/org variable**
+
+**Caller requirements:**
+
+- Must set `permissions: contents: write` to create GitHub releases
+- Must set `permissions: actions: read` to download CI artifacts
+- Must pass `secrets.GITLAB_API_TOKEN` in `secrets:` block
 
 **What it does:**
 
@@ -154,14 +171,23 @@ steps:
 3. Configures GitLab Package Registry (via `setup-uv-gitlab-registry-action`)
 4. Optionally runs lock-aware `uv sync` (checks for `uv.lock`, uses `--frozen` if present)
 
+## Real-World Example
+
+**[ews-jupyter](https://github.com/EWS-Consulting-Private/ews-jupyter)** - Production usage:
+
+- **Before:** 218 lines of workflow YAML
+- **After:** 46 lines (79% reduction)
+- **CI workflow:** [.github/workflows/ci.yml](https://github.com/EWS-Consulting-Private/ews-jupyter/blob/main/.github/workflows/ci.yml)
+- **Release workflow:** [.github/workflows/release.yml](https://github.com/EWS-Consulting-Private/ews-jupyter/blob/main/.github/workflows/release.yml)
+
 ## Examples
 
 See [`examples/`](examples/) for complete workflow templates:
 
-- [`basic-package.yml`](examples/basic-package.yml) - Matrix testing with coverage
+- [`ews-jupyter-migration.md`](examples/ews-jupyter-migration.md) - Real migration story (218→46 lines)
+- [`basic-ci.yml`](examples/basic-ci.yml) - Matrix testing with coverage
 - [`matrix-testing.yml`](examples/matrix-testing.yml) - Test Python 3.12, 3.13, 3.14
-- [`custom-steps.yml`](examples/custom-steps.yml) - Add custom validation steps
-- [`release-basic.yml`](examples/release-basic.yml) - nox-based release
+- [`release.yml`](examples/release.yml) - Complete release workflow
 
 ## Migration Guide
 
@@ -195,14 +221,27 @@ jobs:
 **After**:
 
 ```yaml
-# .github/workflows/ci.yml (8 lines!)
+# .github/workflows/ci.yml (20 lines!)
 name: CI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
 jobs:
   ci:
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/ci.yml@v1
-    secrets: inherit
+    with:
+      python-versions: '["3.12", "3.13"]'
+      lint-python-version: "3.12"
+      run-coverage: true
+      use-nox-build: true
 ```
+
+**See [ews-jupyter](https://github.com/EWS-Consulting-Private/ews-jupyter) for the complete working example.**
 
 ## Development
 
