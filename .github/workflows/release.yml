@@ -14,8 +14,8 @@ on:
                 required: false
                 default: true
 
-permissions:
-    contents: write # Required to create GitHub releases
+# Note: Caller workflow must set 'permissions: contents: write' or 'permissions: inherit'
+# to allow GitHub release creation
 
 jobs:
     release:
