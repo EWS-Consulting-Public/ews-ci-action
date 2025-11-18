@@ -1,0 +1,21 @@
+# CI Workflow - Matrix Testing
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/ci.yml@v1
+    with:
+      # Test against multiple Python versions
+      python-versions: '["3.12", "3.13", "3.14"]'
+      lint-python-version: "3.12"
+      run-coverage: true
+      use-nox-build: true

@@ -1,0 +1,105 @@
+name: Release
+
+on:
+    workflow_call:
+        inputs:
+            python-version:
+                description: Python version for build
+                type: string
+                required: false
+                default: "3.12"
+            use-nox-publish:
+                description: Use 'uvx nox -s publish' instead of direct twine
+                type: boolean
+                required: false
+                default: true
+
+permissions:
+    contents: write # Required to create GitHub releases
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        # Only run if:
+        # 1. CI workflow completed successfully
+        # 2. Triggered by a tag (version release)
+        if: |
+            github.event.workflow_run.conclusion == 'success' &&
+            startsWith(github.event.workflow_run.head_branch, 'v')
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.workflow_run.head_branch }}
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v7
+              with:
+                  enable-cache: true
+
+            - name: Set up Python
+              run: uv python install ${{ inputs.python-version }}
+
+            - name: Setup GitLab credentials
+              uses: EWS-Consulting-Public/setup-uv-gitlab-registry-action@v1
+              with:
+                  token: ${{ vars.GITLAB_API_READ_TOKEN }}
+                  upload-token: ${{ secrets.GITLAB_API_TOKEN }}
+                  project-id: "75984310"
+
+            - name: Generate lock file for release
+              run: |
+                  if [ -f uv.lock ]; then
+                    echo "📦 Lock file already exists, using committed version"
+                  else
+                    echo "📦 Generating lock file for reproducible release..."
+                    uv lock
+                  fi
+
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist
+                  path: dist/
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  run-id: ${{ github.event.workflow_run.id }}
+
+            - name: Publish to GitLab (nox)
+              if: ${{ inputs.use-nox-publish }}
+              run: uvx nox -s publish
+
+            - name: Publish to GitLab (twine)
+              if: ${{ !inputs.use-nox-publish }}
+              env:
+                  TWINE_USERNAME: __token__
+                  TWINE_PASSWORD: ${{ secrets.GITLAB_API_TOKEN }}
+              run: |
+                  uvx twine upload \
+                    --repository-url https://gitlab.com/api/v4/projects/75984310/packages/pypi \
+                    dist/*.whl
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v1
+              with:
+                  tag_name: ${{ github.event.workflow_run.head_branch }}
+                  files: |
+                      dist/*
+                      uv.lock
+                  generate_release_notes: true
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Summary
+              run: |
+                  PACKAGE_NAME=$(grep '^name = ' pyproject.toml | sed 's/name = "\(.*\)"/\1/')
+                  echo "## 🎉 Release Summary" >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Version:** ${{ github.event.workflow_run.head_branch }}" >> $GITHUB_STEP_SUMMARY
+                  echo "- **Built files:**" >> $GITHUB_STEP_SUMMARY
+                  ls -1 dist/ | sed 's/^/  - /' >> $GITHUB_STEP_SUMMARY
+                  echo "" >> $GITHUB_STEP_SUMMARY
+                  echo "### 📦 Installation" >> $GITHUB_STEP_SUMMARY
+                  echo '```bash' >> $GITHUB_STEP_SUMMARY
+                  echo "# Install package" >> $GITHUB_STEP_SUMMARY
+                  echo "uv pip install $PACKAGE_NAME" >> $GITHUB_STEP_SUMMARY
+                  echo '```' >> $GITHUB_STEP_SUMMARY
