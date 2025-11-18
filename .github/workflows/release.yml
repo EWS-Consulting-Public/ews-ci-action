@@ -13,6 +13,10 @@ on:
                 type: boolean
                 required: false
                 default: true
+        secrets:
+            GITLAB_API_TOKEN:
+                description: GitLab API token for package publishing
+                required: true
 
 # Note: Caller workflow must set 'permissions: contents: write' or 'permissions: inherit'
 # to allow GitHub release creation
@@ -56,13 +60,8 @@ jobs:
                     uv lock
                   fi
 
-            - name: Download build artifacts
-              uses: actions/download-artifact@v4
-              with:
-                  name: dist
-                  path: dist/
-                  github-token: ${{ secrets.GITHUB_TOKEN }}
-                  run-id: ${{ github.event.workflow_run.id }}
+            - name: Build package
+              run: uvx nox -s build
 
             - name: Publish to GitLab (nox)
               if: ${{ inputs.use-nox-publish }}
