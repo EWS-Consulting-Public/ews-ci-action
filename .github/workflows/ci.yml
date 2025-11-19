@@ -48,9 +48,14 @@ on:
         type: boolean
         required: false
         default: true
+      ews-credentials-keys:
+        description: "JSON array of expected credential keys for validation (optional)"
+        type: string
+        required: false
+        default: ""
     secrets:
       EWS_CREDENTIALS:
-        description: 'JSON object with all EWS credentials (github_token, gitlab_api_token, gitlab_api_read_token, gitlab_package_registry_url, ammonit_or_password, windcube_insights_password)'
+        description: "JSON object with all EWS credentials (gitlab_api_token, gitlab_api_read_token, gitlab_package_registry_url, ammonit_or_password, windcube_insights_password)"
         required: false
 
 jobs:
@@ -82,9 +87,9 @@ jobs:
       - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
         with:
           python-version: ${{ inputs.lint-python-version }}
-          gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
-          install-dependencies: "true"
+          install-dependencies: "false"
           ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
+          ews-credentials-keys: ${{ inputs.ews-credentials-keys }}
 
       - name: Run ruff check
         run: uv run ruff check .
@@ -107,9 +112,9 @@ jobs:
       - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
         with:
           python-version: ${{ matrix.python-version }}
-          gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
           ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
+          ews-credentials-keys: ${{ inputs.ews-credentials-keys }}
 
       - name: Run tests
         if: ${{ !inputs.run-coverage }}
@@ -137,9 +142,9 @@ jobs:
       - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
         with:
           python-version: ${{ inputs.lint-python-version }}
-          gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
           ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
+          ews-credentials-keys: ${{ inputs.ews-credentials-keys }}
 
       - name: Build package (nox)
         if: ${{ inputs.use-nox-build }}
