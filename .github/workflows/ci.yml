@@ -48,6 +48,10 @@ on:
         type: boolean
         required: false
         default: true
+    secrets:
+      EWS_CREDENTIALS:
+        description: 'JSON object with all EWS credentials (github_token, gitlab_api_token, gitlab_api_read_token, gitlab_package_registry_url, ammonit_or_password, windcube_insights_password)'
+        required: false
 
 jobs:
   check-skip:
@@ -80,6 +84,7 @@ jobs:
           python-version: ${{ inputs.lint-python-version }}
           gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
+          ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
 
       - name: Run ruff check
         run: uv run ruff check .
@@ -104,6 +109,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
+          ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
 
       - name: Run tests
         if: ${{ !inputs.run-coverage }}
@@ -133,6 +139,7 @@ jobs:
           python-version: ${{ inputs.lint-python-version }}
           gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
+          ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
 
       - name: Build package (nox)
         if: ${{ inputs.use-nox-build }}

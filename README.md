@@ -70,9 +70,10 @@ jobs:
     with:
       python-version: "3.12"
       use-nox-publish: true
-    secrets:
-      GITLAB_API_TOKEN: ${{ secrets.GITLAB_API_TOKEN }}
+    secrets: inherit  # Passes EWS_CREDENTIALS automatically
 ```
+
+**Note:** Use `secrets: inherit` to automatically pass the `EWS_CREDENTIALS` secret to the workflow.
 
 That's it! Your package now has:
 
@@ -120,17 +121,16 @@ That's it! Your package now has:
 
 **Required secrets:**
 
-- `GITLAB_API_TOKEN` - For publishing packages (Maintainer role) - **repository secret**
-
-**Required variables:**
-
-- `GITLAB_API_READ_TOKEN` - For installing dependencies (Developer role) - **repository/org variable**
+- `EWS_CREDENTIALS` - JSON object with all EWS credentials - **repository secret**
+  - Contains: `gitlab_api_token`, `gitlab_api_read_token`, `gitlab_package_registry_url`, etc.
+  - Set via: `uv run ews-github export-credentials --repo <repo> --set-secret`
+  - See [ews-github-utils](https://github.com/EWS-Consulting-Private/ews-github-utils) for details
 
 **Caller requirements:**
 
 - Must set `permissions: contents: write` to create GitHub releases
 - Must set `permissions: actions: read` to download CI artifacts
-- Must pass `secrets.GITLAB_API_TOKEN` in `secrets:` block
+- Must use `secrets: inherit` to pass `EWS_CREDENTIALS` automatically
 
 **What it does:**
 

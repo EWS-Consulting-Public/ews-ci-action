@@ -21,6 +21,10 @@ inputs:
     description: Create ~/.config/ews/*.toml for packages that need auth (auto-detects from environment)
     required: false
     default: "true"
+  ews-credentials:
+    description: 'JSON object with all EWS credentials (e.g., {"github_token": "ghp_...", "gitlab_api_token": "glpat-...", "gitlab_api_read_token": "glpat-...", "gitlab_package_registry_url": "https://...", "ammonit_or_password": "...", "windcube_insights_password": "..."}). If provided, takes precedence over environment variables.'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -37,14 +41,45 @@ runs:
     - name: Setup EWS config for EWS packages
       if: inputs.setup-ews-config == 'true'
       shell: bash
+      env:
+        EWS_CREDENTIALS: ${{ inputs.ews-credentials }}
       run: |
         mkdir -p ~/.config/ews/dataset_registries
         mkdir -p ~/.config/ews/config
         
-        # Auto-detect credentials from environment (set via 'secrets: inherit')
-        # Repository secrets are automatically available as environment variables
+        # Parse JSON credentials if provided
+        if [ -n "${EWS_CREDENTIALS}" ]; then
+          echo "📦 Parsing EWS credentials from JSON..."
+          
+          # Extract credentials using jq (available in GitHub runners)
+          GITHUB_TOKEN_JSON=$(echo "$EWS_CREDENTIALS" | jq -r '.github_token // empty')
+          GITLAB_API_TOKEN_JSON=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_token // empty')
+          GITLAB_API_READ_TOKEN_JSON=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_read_token // empty')
+          GITLAB_PACKAGE_REGISTRY_URL_JSON=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_package_registry_url // empty')
+          AMMONIT_OR_PASSWORD_JSON=$(echo "$EWS_CREDENTIALS" | jq -r '.ammonit_or_password // empty')
+          WINDCUBE_INSIGHTS_PASSWORD_JSON=$(echo "$EWS_CREDENTIALS" | jq -r '.windcube_insights_password // empty')
+          
+          # Use JSON values if provided, otherwise fall back to environment variables
+          GITHUB_TOKEN="${GITHUB_TOKEN_JSON:-${GITHUB_TOKEN:-}}"
+          GITLAB_API_TOKEN="${GITLAB_API_TOKEN_JSON:-${GITLAB_API_TOKEN:-}}"
+          GITLAB_API_READ_TOKEN="${GITLAB_API_READ_TOKEN_JSON:-${GITLAB_API_READ_TOKEN:-}}"
+          GITLAB_PACKAGE_REGISTRY_URL="${GITLAB_PACKAGE_REGISTRY_URL_JSON:-${GITLAB_PACKAGE_REGISTRY_URL:-}}"
+          AMMONIT_OR_PASSWORD="${AMMONIT_OR_PASSWORD_JSON:-${AMMONIT_OR_PASSWORD:-}}"
+          WINDCUBE_INSIGHTS_PASSWORD="${WINDCUBE_INSIGHTS_PASSWORD_JSON:-${WINDCUBE_INSIGHTS_PASSWORD:-}}"
+          
+          echo "✅ Credentials loaded from JSON"
+        else
+          echo "📦 Using environment variables for credentials..."
+          # Use environment variables directly
+          GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+          GITLAB_API_TOKEN="${GITLAB_API_TOKEN:-}"
+          GITLAB_API_READ_TOKEN="${GITLAB_API_READ_TOKEN:-}"
+          GITLAB_PACKAGE_REGISTRY_URL="${GITLAB_PACKAGE_REGISTRY_URL:-}"
+          AMMONIT_OR_PASSWORD="${AMMONIT_OR_PASSWORD:-}"
+          WINDCUBE_INSIGHTS_PASSWORD="${WINDCUBE_INSIGHTS_PASSWORD:-}"
+        fi
         
-        # GitHub token (GITHUB_TOKEN is always available in GitHub Actions)
+        # GitHub token
         if [ -n "${GITHUB_TOKEN}" ]; then
           cat > ~/.config/ews/config/github.toml <<EOF
         [github]
@@ -58,8 +93,28 @@ runs:
           echo "⚠️  No GitHub token available, skipping config creation"
         fi
         
-        # Ammonit-OR password (from repository secret AMMONIT_OR_PASSWORD)
-        if [ -n "${AMMONIT_OR_PASSWORD:-}" ]; then
+        # GitLab tokens (for .pypirc)
+        if [ -n "${GITLAB_API_TOKEN}" ] || [ -n "${GITLAB_API_READ_TOKEN}" ]; then
+          GITLAB_URL="${GITLAB_PACKAGE_REGISTRY_URL:-https://gitlab.com/api/v4/projects/75984310/packages/pypi}"
+          
+          cat > ~/.pypirc <<EOF
+        [distutils]
+        index-servers =
+            gitlab
+        
+        [gitlab]
+        repository = ${GITLAB_URL}
+        username = __token__
+        password = ${GITLAB_API_TOKEN:-${GITLAB_API_READ_TOKEN}}
+        EOF
+          chmod 600 ~/.pypirc
+          echo "✅ Created ~/.pypirc for GitLab Package Registry"
+        else
+          echo "ℹ️  No GitLab tokens available, skipping .pypirc creation"
+        fi
+        
+        # Ammonit-OR password
+        if [ -n "${AMMONIT_OR_PASSWORD}" ]; then
           cat > ~/.config/ews/config/ammonit-or.toml <<EOF
         [ammonit-or]
         email = "wm@ews-consulting.com"
@@ -71,8 +126,8 @@ runs:
           echo "ℹ️  No Ammonit OR password available, skipping config creation"
         fi
         
-        # Windcube Insights password (from repository secret WINDCUBE_INSIGHTS_PASSWORD)
-        if [ -n "${WINDCUBE_INSIGHTS_PASSWORD:-}" ]; then
+        # Windcube Insights password
+        if [ -n "${WINDCUBE_INSIGHTS_PASSWORD}" ]; then
           cat > ~/.config/ews/config/windcube-insights.toml <<EOF
         [windcube-insights]
         email = "wm@ews-consulting.at"

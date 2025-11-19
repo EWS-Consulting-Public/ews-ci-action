@@ -14,8 +14,8 @@ on:
                 required: false
                 default: true
         secrets:
-            GITLAB_API_TOKEN:
-                description: GitLab API token for package publishing
+            EWS_CREDENTIALS:
+                description: 'JSON object with all EWS credentials (gitlab_api_token, gitlab_api_read_token, etc.)'
                 required: true
 
 # Note: Caller workflow must set 'permissions: contents: write' or 'permissions: inherit'
@@ -45,11 +45,61 @@ jobs:
               run: uv python install ${{ inputs.python-version }}
 
             - name: Setup GitLab credentials
-              uses: EWS-Consulting-Public/setup-uv-gitlab-registry-action@v1
-              with:
-                  token: ${{ vars.GITLAB_API_READ_TOKEN }}
-                  upload-token: ${{ secrets.GITLAB_API_TOKEN }}
-                  project-id: "75984310"
+              shell: bash
+              env:
+                  EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
+              run: |
+                  # Extract GitLab tokens from JSON credentials
+                  GITLAB_API_TOKEN=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_token // empty')
+                  GITLAB_API_READ_TOKEN=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_read_token // empty')
+                  GITLAB_PACKAGE_REGISTRY_URL=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_package_registry_url // empty')
+                  
+                  # Use default URL if not provided
+                  GITLAB_URL="${GITLAB_PACKAGE_REGISTRY_URL:-https://gitlab.com/api/v4/projects/75984310/packages/pypi}"
+                  
+                  # Create .pypirc for twine
+                  cat > ~/.pypirc <<EOF
+                  [distutils]
+                  index-servers =
+                      gitlab
+                  
+                  [gitlab]
+                  repository = ${GITLAB_URL}
+                  username = __token__
+                  password = ${GITLAB_API_TOKEN}
+                  EOF
+                  chmod 600 ~/.pypirc
+                  echo "✅ Created ~/.pypirc for GitLab Package Registry"
+                  
+                  # Create .netrc for uv/pip
+                  cat > ~/.netrc <<EOF
+                  machine gitlab.com
+                  login __token__
+                  password ${GITLAB_API_READ_TOKEN:-${GITLAB_API_TOKEN}}
+                  EOF
+                  chmod 600 ~/.netrc
+                  echo "✅ Created ~/.netrc for GitLab authentication"
+
+            - name: Setup uv GitLab index
+              shell: bash
+              env:
+                  EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
+              run: |
+                  # Extract read token from JSON
+                  GITLAB_READ_TOKEN=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_read_token // empty')
+                  
+                  # Configure uv index
+                  mkdir -p ~/.config/uv
+                  cat > ~/.config/uv/uv.toml <<EOF
+                  [[index]]
+                  name = "gitlab"
+                  url = "https://gitlab.com/api/v4/projects/75984310/packages/pypi/simple"
+                  default = false
+                  explicit = false
+                  authenticate = "always"
+                  ignore-error-codes = [403]
+                  EOF
+                  echo "✅ Configured uv GitLab index"
 
             - name: Generate lock file for release
               run: |
@@ -69,12 +119,17 @@ jobs:
 
             - name: Publish to GitLab (twine)
               if: ${{ !inputs.use-nox-publish }}
+              shell: bash
               env:
-                  TWINE_USERNAME: __token__
-                  TWINE_PASSWORD: ${{ secrets.GITLAB_API_TOKEN }}
+                  EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
               run: |
+                  GITLAB_API_TOKEN=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_token // empty')
+                  GITLAB_PACKAGE_REGISTRY_URL=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_package_registry_url // empty')
+                  GITLAB_URL="${GITLAB_PACKAGE_REGISTRY_URL:-https://gitlab.com/api/v4/projects/75984310/packages/pypi}"
+                  
+                  TWINE_USERNAME=__token__ TWINE_PASSWORD="${GITLAB_API_TOKEN}" \
                   uvx twine upload \
-                    --repository-url https://gitlab.com/api/v4/projects/75984310/packages/pypi \
+                    --repository-url "${GITLAB_URL}" \
                     dist/*.whl
 
             - name: Create GitHub Release
