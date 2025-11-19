@@ -80,9 +80,6 @@ jobs:
           python-version: ${{ inputs.lint-python-version }}
           gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ammonit-or-pwd: ${{ secrets.AMMONIT_OR_PASSWORD }}
-          windcube-insights-pwd: ${{ secrets.WINDCUBE_INSIGHTS_PASSWORD }}
 
       - name: Run ruff check
         run: uv run ruff check .
@@ -107,9 +104,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ammonit-or-pwd: ${{ secrets.AMMONIT_OR_PASSWORD }}
-          windcube-insights-pwd: ${{ secrets.WINDCUBE_INSIGHTS_PASSWORD }}
 
       - name: Run tests
         if: ${{ !inputs.run-coverage }}
@@ -139,9 +133,6 @@ jobs:
           python-version: ${{ inputs.lint-python-version }}
           gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
           install-dependencies: "true"
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          ammonit-or-pwd: ${{ secrets.AMMONIT_OR_PASSWORD }}
-          windcube-insights-pwd: ${{ secrets.WINDCUBE_INSIGHTS_PASSWORD }}
 
       - name: Build package (nox)
         if: ${{ inputs.use-nox-build }}

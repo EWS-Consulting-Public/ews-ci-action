@@ -18,21 +18,9 @@ inputs:
     required: false
     default: "true"
   setup-ews-config:
-    description: Create ~/.config/ews/*.toml for packages that need auth (GitHub, Ammonit-OR, Windcube-insights)
+    description: Create ~/.config/ews/*.toml for packages that need auth (auto-detects from environment)
     required: false
     default: "true"
-  github-token:
-    description: GitHub token for private repo access (defaults to GITHUB_TOKEN)
-    required: false
-    default: ""
-  ammonit-or-pwd:
-    description: Password for Ammonit OR access
-    required: false
-    default: ""
-  windcube-insights-pwd:
-    description: Password for Windcube Insights access
-    required: false
-    default: ""
 
 runs:
   using: composite
@@ -49,24 +37,20 @@ runs:
     - name: Setup EWS config for EWS packages
       if: inputs.setup-ews-config == 'true'
       shell: bash
-      env:
-        GH_TOKEN: ${{ inputs.github-token }}
-        AMMONIT_OR_PWD: ${{ inputs.ammonit-or-pwd }}
-        WINDCUBE_INSIGHTS_PWD: ${{ inputs.windcube-insights-pwd }}
       run: |
         mkdir -p ~/.config/ews/dataset_registries
         mkdir -p ~/.config/ews/config
         
-        # Use provided tokens/passwords (already set as env vars above)
-        # GH_TOKEN comes from inputs.github-token, with fallback to GITHUB_TOKEN in the shell
-        TOKEN="${GH_TOKEN:-${GITHUB_TOKEN}}"
+        # Auto-detect credentials from environment (set via 'secrets: inherit')
+        # Repository secrets are automatically available as environment variables
         
-        if [ -n "$TOKEN" ]; then
+        # GitHub token (GITHUB_TOKEN is always available in GitHub Actions)
+        if [ -n "${GITHUB_TOKEN}" ]; then
           cat > ~/.config/ews/config/github.toml <<EOF
         [github]
         username = "${{ github.actor }}"
         email = "noreply@ews-consulting.com"
-        token = "$TOKEN"
+        token = "${GITHUB_TOKEN}"
         EOF
           chmod 600 ~/.config/ews/config/github.toml
           echo "✅ Created ~/.config/ews/config/github.toml"
@@ -74,32 +58,36 @@ runs:
           echo "⚠️  No GitHub token available, skipping config creation"
         fi
         
-        if [ -n "$AMMONIT_OR_PWD" ]; then
+        # Ammonit-OR password (from repository secret AMMONIT_OR_PASSWORD)
+        if [ -n "${AMMONIT_OR_PASSWORD:-}" ]; then
           cat > ~/.config/ews/config/ammonit-or.toml <<EOF
-          [ammonit-or]
-          email = "wm@ews-consulting.com"
-          password = "$AMMONIT_OR_PWD"
+        [ammonit-or]
+        email = "wm@ews-consulting.com"
+        password = "${AMMONIT_OR_PASSWORD}"
         EOF
           chmod 600 ~/.config/ews/config/ammonit-or.toml
           echo "✅ Created ~/.config/ews/config/ammonit-or.toml"
         else
-          echo "⚠️  No Ammonit OR password available, skipping config creation"
+          echo "ℹ️  No Ammonit OR password available, skipping config creation"
         fi
         
-        if [ -n "$WINDCUBE_INSIGHTS_PWD" ]; then
+        # Windcube Insights password (from repository secret WINDCUBE_INSIGHTS_PASSWORD)
+        if [ -n "${WINDCUBE_INSIGHTS_PASSWORD:-}" ]; then
           cat > ~/.config/ews/config/windcube-insights.toml <<EOF
-          [windcube-insights]
-          email = "wm@ews-consulting.at"
-          password = "$WINDCUBE_INSIGHTS_PWD"
+        [windcube-insights]
+        email = "wm@ews-consulting.at"
+        password = "${WINDCUBE_INSIGHTS_PASSWORD}"
         EOF
           chmod 600 ~/.config/ews/config/windcube-insights.toml
           echo "✅ Created ~/.config/ews/config/windcube-insights.toml"
         else
-          echo "⚠️  No Windcube Insights password available, skipping config creation"
+          echo "ℹ️  No Windcube Insights password available, skipping config creation"
         fi
 
         # Compatibility with old tests (we transitioned to ~/.config/ews/config like /etc/ews/config)
-        cp ~/.config/ews/config/*.toml ~/.config/ews/
+        if ls ~/.config/ews/config/*.toml 1> /dev/null 2>&1; then
+          cp ~/.config/ews/config/*.toml ~/.config/ews/
+        fi
 
     - name: Setup GitLab Package Registry
       uses: EWS-Consulting-Public/setup-uv-gitlab-registry-action@v1
