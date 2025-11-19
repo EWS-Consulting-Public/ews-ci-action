@@ -32,7 +32,7 @@ on:
   push:
     branches: [main]
     tags:
-      - 'v*'
+      - "v*"
   pull_request:
     branches: [main]
 
@@ -40,9 +40,12 @@ jobs:
   ci:
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/ci.yml@v1
     with:
-      python-versions: '["3.12", "3.13"]'  # Matrix testing
-      run-coverage: true  # Upload to Codecov
-      use-nox-build: true  # Use nox for builds
+      python-versions: '["3.12", "3.13"]' # Matrix testing
+      run-coverage: true # Upload to Codecov
+      use-nox-build: true # Use nox for builds
+      ews-credentials-keys: ${{ vars.EWS_CREDENTIALS_KEYS }} # Optional validation
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }} # Required for private packages
 ```
 
 ### Use Reusable Release Workflow
@@ -57,12 +60,12 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
 
 permissions:
-  contents: write  # Required for GitHub releases
-  actions: read    # Required to download artifacts from CI
+  contents: write # Required for GitHub releases
+  actions: read # Required to download artifacts from CI
 
 jobs:
   release:
@@ -70,10 +73,12 @@ jobs:
     with:
       python-version: "3.12"
       use-nox-publish: true
-    secrets: inherit  # Passes EWS_CREDENTIALS automatically
+      ews-credentials-keys: ${{ vars.EWS_CREDENTIALS_KEYS }} # Optional validation
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }} # Required for GitLab publishing
 ```
 
-**Note:** Use `secrets: inherit` to automatically pass the `EWS_CREDENTIALS` secret to the workflow.
+**Note:** Pass `EWS_CREDENTIALS` secret explicitly (contains all credentials as JSON). The `ews-credentials-keys` variable is optional for validation.
 
 That's it! Your package now has:
 
@@ -106,6 +111,7 @@ That's it! Your package now has:
 4. `build` - Runs `uvx nox -s build` or `uv build --wheel` and uploads artifacts
 
 **What changed vs minimal wrapper:**
+
 - ✅ Matrix testing (not single version)
 - ✅ Coverage + Codecov upload
 - ✅ Lock-aware sync (`uv.lock` respected)
@@ -126,11 +132,17 @@ That's it! Your package now has:
   - Set via: `uv run ews-github export-credentials --repo <repo> --set-secret`
   - See [ews-github-utils](https://github.com/EWS-Consulting-Private/ews-github-utils) for details
 
+**Optional inputs:**
+
+- `ews-credentials-keys` - Repository variable with JSON array of expected keys for validation
+  - Example: `["gitlab_api_token", "gitlab_api_read_token", "gitlab_package_registry_url"]`
+  - Set via: `uv run ews-github export-credentials --repo <repo> --set-keys`
+
 **Caller requirements:**
 
 - Must set `permissions: contents: write` to create GitHub releases
 - Must set `permissions: actions: read` to download CI artifacts
-- Must use `secrets: inherit` to pass `EWS_CREDENTIALS` automatically
+- Must pass `secrets: { EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }} }` explicitly
 
 **What it does:**
 
@@ -143,6 +155,7 @@ That's it! Your package now has:
 7. Writes rich summary with installation instructions
 
 **What changed vs minimal wrapper:**
+
 - ✅ Auto-generates lockfile if missing
 - ✅ Uses `setup-uv-gitlab-registry-action` with upload token
 - ✅ nox publish support
@@ -156,16 +169,17 @@ Use the `setup-ews-ci` composite action directly for custom workflows:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  
+
   - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
     with:
       python-version: "3.12"
       gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
-  
+
   - run: uv run pytest
 ```
 
 **What it does:**
+
 1. Installs `uv` with caching
 2. Installs Python version
 3. Configures GitLab Package Registry (via `setup-uv-gitlab-registry-action`)
@@ -216,7 +230,8 @@ jobs:
     steps:
       - run: uvx nox -s build
 ```
-```
+
+````
 
 **After**:
 
@@ -239,7 +254,7 @@ jobs:
       lint-python-version: "3.12"
       run-coverage: true
       use-nox-build: true
-```
+````
 
 **See [ews-jupyter](https://github.com/EWS-Consulting-Private/ews-jupyter) for the complete working example.**
 
@@ -270,4 +285,3 @@ MIT
 ## Support
 
 Questions? Issues? See [EWS Bootstrap Documentation](https://github.com/EWS-Consulting-Private/ews-bootstrap)
-

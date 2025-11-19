@@ -19,6 +19,7 @@ Minimal setup for a standard EWS Python package.
 Test across multiple Python versions.
 
 **Use when:**
+
 - You support Python 3.12, 3.13, 3.14+
 - You want to verify compatibility across versions
 - You need to test on different OS platforms (Linux, macOS, Windows)
@@ -28,6 +29,7 @@ Test across multiple Python versions.
 Add custom validation or build steps beyond standard CI.
 
 **Use when:**
+
 - You need additional checks (e.g., notebook validation, docs build)
 - You want to run package-specific scripts
 - You need custom artifact handling
@@ -37,6 +39,7 @@ Add custom validation or build steps beyond standard CI.
 Package with CI but manual release process.
 
 **Use when:**
+
 - You want automated testing but manual publishing
 - You're using a different package registry
 - You need approval gates before releases
@@ -85,4 +88,3 @@ jobs:
     steps:
       - run: echo "Additional checks here"
 ```
-

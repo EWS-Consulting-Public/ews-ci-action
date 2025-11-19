@@ -9,12 +9,14 @@ Thank you for contributing to the EWS CI/CD infrastructure!
 **Before releasing:**
 
 1. Create a feature branch:
+
    ```bash
    git checkout -b feature/my-improvement
    git push -u origin feature/my-improvement
    ```
 
 2. Update a test package (e.g., `ews-jupyter`) to use your branch:
+
    ```yaml
    # In ews-jupyter/.github/workflows/ci.yml
    jobs:
@@ -109,4 +111,3 @@ When adding a new reusable workflow:
 ## Questions?
 
 Ask in EWS-Consulting-Private discussions or open an issue.
-
