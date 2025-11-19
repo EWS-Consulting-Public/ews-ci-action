@@ -48,6 +48,11 @@ on:
         type: boolean
         required: false
         default: true
+      pytest-args:
+        description: 'Additional arguments for pytest (e.g. ''-m "not fails_in_ci"'' or ''-k test_something''). Empty by default (runs all tests).'
+        type: string
+        required: false
+        default: ""
       ews-credentials-keys:
         description: "JSON array of expected credential keys for validation (optional)"
         type: string
@@ -118,11 +123,11 @@ jobs:
 
       - name: Run tests
         if: ${{ !inputs.run-coverage }}
-        run: uv run pytest
+        run: uv run pytest ${{ inputs.pytest-args }}
 
       - name: Run tests with coverage
         if: ${{ inputs.run-coverage }}
-        run: uv run pytest --cov=src --cov-report=term-missing --cov-report=xml
+        run: uv run pytest ${{ inputs.pytest-args }} --cov=src --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage to Codecov
         if: inputs.run-coverage && inputs.upload-coverage && matrix.python-version == fromJSON(inputs.python-versions)[0]
