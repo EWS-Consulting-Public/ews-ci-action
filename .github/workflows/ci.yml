@@ -73,8 +73,9 @@ jobs:
         id: check
         run: |
           # Skip CI on main branch if commit is a version bump (tag CI will run instead)
+          COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1)
           if [[ "${{ github.ref }}" == "refs/heads/main" ]] && \
-             [[ "${{ github.event.head_commit.message }}" == "bump version to"* ]]; then
+             [[ "$COMMIT_MSG" == "bump version to"* ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Skipping CI for version bump commit (will run on tag)"
           else
