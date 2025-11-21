@@ -173,7 +173,8 @@ steps:
   - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
     with:
       python-version: "3.12"
-      gitlab-token: ${{ vars.GITLAB_API_READ_TOKEN }}
+      ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
+      ews-credentials-keys: ${{ vars.EWS_CREDENTIALS_KEYS }}
 
   - run: uv run pytest
 ```

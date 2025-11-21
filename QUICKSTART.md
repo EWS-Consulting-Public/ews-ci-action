@@ -135,10 +135,6 @@ uv run ews-github audit --repo <your-repo>
 uv run ews-github export-credentials --repo <your-repo> --set-secret --set-keys
 ```
 
-**Original troubleshooting:**
-
-- Check that `GITLAB_API_READ_TOKEN` is set in repository variables
-
 **Release doesn't trigger:**
 
 - Verify tag pattern is `v*` (e.g., `v20251118.0`)
