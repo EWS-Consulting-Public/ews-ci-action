@@ -37,12 +37,16 @@ runs:
         EWS_CREDENTIALS: ${{ inputs.ews-credentials }}
         EWS_CREDENTIALS_KEYS: ${{ inputs.ews-credentials-keys }}
         GITHUB_TOKEN: ${{ github.token }}
+        # Override system cache to user-writable location in CI
+        EWS_DATASETS_SYSTEM_CACHE_PATH: ${{ github.workspace }}/.cache/ews/datasets
       run: |
         echo "🔧 Setting up EWS CI environment..."
         
         mkdir -p ~/.config/ews/dataset_registries
         mkdir -p ~/.config/ews/config
         mkdir -p ~/.config/uv
+        mkdir -p ~/.cache/ews/datasets
+        mkdir -p ${{ github.workspace }}/.cache/ews/datasets
         
         # ============================================================
         # 1. GitHub token (from runner context)
