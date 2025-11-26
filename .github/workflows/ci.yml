@@ -72,12 +72,24 @@ jobs:
       - name: Check if should skip
         id: check
         run: |
-          # Skip CI on main branch if commit is a version bump (tag CI will run instead)
-          COMMIT_MSG=$(echo "${{ github.event.head_commit.message }}" | head -n 1)
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]] && \
-             [[ "$COMMIT_MSG" == "bump version to"* ]]; then
+          # Get full commit message (not just first line)
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          COMMIT_MSG_LOWER=$(echo "$COMMIT_MSG" | tr '[:upper:]' '[:lower:]')
+
+          # Skip if commit message contains [skip ci] or [ci skip]
+          if [[ "$COMMIT_MSG_LOWER" == *"[skip ci]"* ]] || \
+             [[ "$COMMIT_MSG_LOWER" == *"[ci skip]"* ]]; then
             echo "skip=true" >> $GITHUB_OUTPUT
-            echo "Skipping CI for version bump commit (will run on tag)"
+            echo "⏭️ Skipping CI: [skip ci] or [ci skip] in commit message"
+            exit 0
+          fi
+
+          # Skip CI on main branch if commit is a version bump (tag CI will run instead)
+          COMMIT_MSG_FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]] && \
+             [[ "$COMMIT_MSG_FIRST_LINE" == "bump version to"* ]]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "⏭️ Skipping CI for version bump commit (will run on tag)"
           else
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
