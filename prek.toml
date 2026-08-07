@@ -1,5 +1,4 @@
 # Git hooks for ews-ci-action. Run: prek run -a | prek install
-# Migrated from .pre-commit-config.yaml (issue #18, 2026-08-08).
 #:schema https://www.schemastore.org/prek.json
 
 [ci]
@@ -25,6 +24,8 @@ hooks = [
     { id = "check-symlinks" },
     { id = "check-yaml" },
     { id = "end-of-file-fixer", exclude = "^(\\.github/|docs/_old/)" },
-    { id = "mixed-line-ending", args = ["--fix=lf"], exclude = "^docs/_old/" },
-    { id = "trailing-whitespace", exclude = "^(\\.github/|docs/_old/)" }
+    { id = "mixed-line-ending", args = [
+        "--fix=lf",
+    ], exclude = "^docs/_old/" },
+    { id = "trailing-whitespace", exclude = "^(\\.github/|docs/_old/)" },
 ]
