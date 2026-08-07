@@ -1,0 +1,73 @@
+<!-- GENERATED FROM .cursor/rules/agent-config-sync.mdc BY scripts/sync_agent_config.py.
+     Edit the .cursor source, then run: uv run python scripts/sync_agent_config.py -->
+
+**Applies to:** `{.claude`, `.cursor}/**`
+
+Skip this rule if your change does not touch those paths.
+
+# Agent config: `.cursor` is authored, `.claude` is generated
+
+**Author under `.cursor/`. Never edit `.claude/` by hand** — it is overwritten.
+
+```bash
+uv run --no-project python scripts/sync_agent_config.py            # regenerate .claude/
+uv run --no-project python scripts/sync_agent_config.py --check    # verify; exit 1 on drift
+```
+
+**`--no-project` is required here.** Unlike the Python packages in the estate,
+this repository has no `pyproject.toml`, so plain `uv run` fails looking for a
+project to sync. The script imports only `argparse`, `filecmp`, `shutil`, `sys`
+and `pathlib`, so it needs no environment at all.
+
+`prek` runs the `--check` form as a local hook, so drift fails the commit
+rather than being discovered months later.
+
+| Source (authored) | Target (generated) |
+| --- | --- |
+| `.cursor/rules/<name>.mdc` | `.claude/rules/<name>.md` |
+| `.cursor/skills/<x>/**` | `.claude/skills/<x>/**` (byte-for-byte) |
+
+Files under `.claude/` with no `.cursor/` source are **deleted**, so renaming a
+rule cannot leave a stale copy loading forever.
+
+## Why generated, not hand-mirrored
+
+The two tools scope rules differently. **Cursor** reads `globs` /
+`alwaysApply` and loads a rule only when matching files are open. **Claude
+Code** loads every `.claude/rules/*.md` unconditionally, with no path scoping.
+So the trees cannot be byte-identical for rules, and a human mirroring them by
+hand drifts — in another EWS repository four rules that `AGENTS.md` called
+always-on ended up with no Claude counterpart at all.
+
+That failure mode matters more here than anywhere else in the estate: the rule
+most likely to be lost to drift is `public-repo-boundary`, and losing it means
+a session writes internal detail into a world-readable repository.
+
+The generator emits the Cursor scope as an **Applies to** header, so a
+path-scoped rule stays self-gating once loaded.
+
+## Adding or renaming a rule
+
+1. Write the `.mdc` under `.cursor/rules/` with full frontmatter
+   (`description`, `globs`, `alwaysApply`).
+2. Run the generator.
+3. Commit **both** trees — the generated tree is checked in, so an agent that
+   only sees `.claude/` still gets the rules.
+
+Keep the set small. A large set of narrow rules is what drifted before.
+
+## Writing skills that survive the copy
+
+Skills are copied **byte-for-byte**, so a relative link resolves from whichever
+tree the reader is in.
+
+- Links up to repo-root content are fine — `.cursor/skills/x/` and
+  `.claude/skills/x/` sit at the same depth, so `../../../docs/…` resolves in
+  both.
+- **Never link into `.cursor/` itself** from a skill. Name such a path as plain
+  text in backticks instead.
+
+The `description:` frontmatter is the **dispatch mechanism**, not a summary: an
+agent picks a skill from its name and description alone. A description that has
+drifted from what the skill does means the skill silently never fires, and
+nothing errors.
