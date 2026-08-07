@@ -29,7 +29,6 @@ runner, and what silently does nothing — not an API.
 .github/workflows/release.yml             reusable: on a green tagged CI run, build, publish, release
 examples/                                 three copy-paste caller workflows
 docs/                                     documentation map + ADRs
-docs/_old/                                pre-2026-08-07 docs, parked pending review - do not cite
 scripts/sync_agent_config.py              generates .claude/ from .cursor/
 .cursor/ .claude/                         rules (.cursor authored, .claude generated)
 ```
@@ -92,9 +91,9 @@ the action writes), [`workflows.md`](docs/workflows.md) (every input),
   immediately and silently. Add optional inputs with behaviour-preserving
   defaults instead.
 - **Never edit `.claude/` by hand** — generated from `.cursor/`.
-- **Do not verify a claim from `docs/_old/`.** Eleven of its statements are
-  wrong against the YAML; the list is in
-  [`docs/_old/README.md`](docs/_old/README.md).
+- **Do not cite pre-2026-08-07 documentation from git history without
+  verifying against the YAML.** Eleven claims in the old docs were wrong;
+  corrections live in [`docs/README.md`](docs/README.md) and the ADRs.
 
 ## Non-goals
 

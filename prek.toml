@@ -23,9 +23,9 @@ hooks = [
     { id = "check-merge-conflict" },
     { id = "check-symlinks" },
     { id = "check-yaml" },
-    { id = "end-of-file-fixer", exclude = "^(\\.github/|docs/_old/)" },
+    { id = "end-of-file-fixer", exclude = "^\\.github/" },
     { id = "mixed-line-ending", args = [
         "--fix=lf",
-    ], exclude = "^docs/_old/" },
-    { id = "trailing-whitespace", exclude = "^(\\.github/|docs/_old/)" },
+    ] },
+    { id = "trailing-whitespace", exclude = "^\\.github/" },
 ]

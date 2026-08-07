@@ -62,7 +62,6 @@ Every file under `docs/` carries a YAML header. `status:` is greppable —
 | [credentials.md](credentials.md) | What `EWS_CREDENTIALS` holds and how each key is consumed | `as-built` |
 | [releasing.md](releasing.md) | Changing this repository and moving the `v1` tag | `as-built` |
 | [decisions/](decisions/) | Why is it like this? | dated ADRs |
-| [_old/](_old/) | What did the docs say before 2026-08-07? | `reference` — **do not cite** |
 
 Reading order for someone new: this file, then `adopting.md`, then
 `action-reference.md`. `workflows.md` and `credentials.md` are lookup.
@@ -77,25 +76,23 @@ Reading order for someone new: this file, then `adopting.md`, then
 | [0004](decisions/0004-v1-is-a-moving-major-tag.md) | `v1` is force-moved to the newest `v1.x`; consumers track a major version, not a commit |
 | [0005](decisions/0005-release-rebuilds-rather-than-downloading.md) | `release.yml` rebuilds the wheel instead of downloading CI's artifact |
 
-## Not carried forward from the parked docs
+## Not carried forward from the pre-2026-08-07 docs
 
-Three topics in [`_old/`](_old/) were deliberately **not** rewritten, so that
-their absence reads as a decision rather than an oversight:
+Three topics from the old root README / examples index were deliberately **not**
+rewritten, so that their absence reads as a decision rather than an oversight:
 
-- **The before/after migration guide** (`_old/root-README.md`) — a hand-written
-  consumer workflow converted into a caller of these reusable workflows. Its
-  line-count claims were never verified against a real repository, and
-  [adopting.md](adopting.md) now gives the target shape directly. Anyone
-  migrating writes the caller from § 1 and § 2 and deletes the rest.
-- **A `release-only` caller pattern** (`_old/examples-README.md`
-  § *release-only.yml*) — a repository that releases without running CI here.
-  The file it documented never existed in `examples/`. The use case is real;
-  nothing in this repository implements it, so it is not documented as if it
-  did.
-- **An "adding a new reusable workflow" procedure** (`_old/CONTRIBUTING.md`
-  § *Adding New Workflows*) — [releasing.md](releasing.md) covers changing the
-  existing two, which is what actually happens. A third workflow would be an
-  ADR before it was a procedure.
+- **The before/after migration guide** — a hand-written consumer workflow
+  converted into a caller of these reusable workflows. Its line-count claims
+  were never verified against a real repository, and [adopting.md](adopting.md)
+  now gives the target shape directly. Anyone migrating writes the caller from
+  § 1 and § 2 and deletes the rest.
+- **A `release-only` caller pattern** — a repository that releases without
+  running CI here. The example file never existed in `examples/`. The use case
+  is real; nothing in this repository implements it, so it is not documented as
+  if it did.
+- **An "adding a new reusable workflow" procedure** — [releasing.md](releasing.md)
+  covers changing the existing two, which is what actually happens. A third
+  workflow would be an ADR before it was a procedure.
 
 Restoring any of these is a deliberate choice, not a gap to be quietly filled.
 

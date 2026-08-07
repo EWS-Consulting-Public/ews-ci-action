@@ -64,12 +64,11 @@ setup with `install-dependencies: "false"`, conditional `uv lock`, then
 
 `grep -rn 'download-artifact' .github/` → no output (2026-08-07).
 
-The parked [`docs/_old/root-README.md`](../_old/root-README.md) § *release.yml*
-listed "Downloads build artifacts from CI" as step 4 of what the workflow does.
-That was wrong when written or has been wrong since; this ADR exists so the
-claim is not reintroduced.
+The pre-migration root README listed "Downloads build artifacts from CI" as
+step 4 of what `release.yml` does. That was wrong when written or has been
+wrong since; this ADR exists so the claim is not reintroduced.
 
 ## Related
 
 - [../workflows.md](../workflows.md) — the full release step list
-- [../_old/README.md](../_old/README.md) — the other corrected claims
+- [../README.md](../README.md) — other corrected claims from the 2026-08-07 rewrite

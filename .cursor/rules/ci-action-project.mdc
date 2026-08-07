@@ -55,8 +55,9 @@ Adding to that list is a **breaking change**, even when no input changed.
 - **Never add a step that fails open on missing credentials** without saying so
   in `docs/action-reference.md` § *Failure modes*. The existing script already
   degrades silently everywhere; do not deepen that without recording it.
-- **Never trust `docs/_old/`.** Eleven of its claims are wrong against the
-  YAML; the list is in `docs/_old/README.md`.
+- **Never trust pre-2026-08-07 documentation without verifying against the
+  YAML.** Eleven old claims were wrong; corrections are in `docs/README.md`
+  and the ADRs.
 
 ## Things that look like bugs and are recorded
 
