@@ -1,0 +1,10 @@
+# Normalize every text file to LF in the index AND on checkout.
+# `* text=lf` (the form used across most EWS repos) only marks files as text -
+# it does NOT set the checkout line ending, so a Windows clone still gets CRLF
+# working-tree files. `text=auto eol=lf` is the form that forces LF both ways.
+#
+# This matters more here than elsewhere: everything in this repo is YAML or
+# shell executed on ubuntu-latest runners, where a stray CR is a syntax error.
+#
+# Verify with: git check-attr text eol -- README.md   ->   eol: lf
+* text=auto eol=lf

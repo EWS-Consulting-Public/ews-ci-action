@@ -1,0 +1,23 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{py,pyi}]
+indent_style = space
+indent_size = 4
+
+# Markdown uses trailing double-space for hard line breaks.
+[*.{md,mdc}]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml,toml,json,code-workspace}]
+indent_style = space
+indent_size = 2
+
+[*.csv]
+trim_trailing_whitespace = false
+insert_final_newline = false
