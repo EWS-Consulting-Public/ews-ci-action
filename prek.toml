@@ -1,0 +1,30 @@
+# Git hooks for ews-ci-action. Run: prek run -a | prek install
+# Migrated from .pre-commit-config.yaml (issue #18, 2026-08-08).
+#:schema https://www.schemastore.org/prek.json
+
+[ci]
+autoupdate_commit_msg = "chore: update pre-commit hooks"
+autofix_commit_msg = "style: pre-commit fixes"
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "sync-agent-config"
+name = "agent config (.claude generated from .cursor)"
+entry = "uv run --no-project python scripts/sync_agent_config.py --check"
+language = "system"
+files = "^\\.(cursor|claude)/|^scripts/sync_agent_config\\.py$"
+pass_filenames = false
+
+[[repos]]
+repo = "builtin"
+hooks = [
+    { id = "check-case-conflict" },
+    { id = "check-merge-conflict" },
+    { id = "check-symlinks" },
+    { id = "check-yaml" },
+    { id = "end-of-file-fixer", exclude = "^(\\.github/|docs/_old/)" },
+    { id = "mixed-line-ending", args = ["--fix=lf"], exclude = "^docs/_old/" },
+    { id = "trailing-whitespace", exclude = "^(\\.github/|docs/_old/)" }
+]
