@@ -7,10 +7,11 @@ test, build and release the packages that call them.
 > ## ⚠ THIS REPOSITORY IS PUBLIC
 >
 > `EWS-Consulting-Public/ews-ci-action` is world-readable, and so is its commit
-> history and the edit history of every issue. **It is the only public
-> repository in the estate.** Nothing internal goes in here — no server or host
-> names, no share layouts or drive paths, no local checkout paths, no registry
-> ids or accounts, no client names, no internal coordination structure.
+> history and the edit history of every issue. **The habits that are safe in a
+> private repository are not safe here.** Nothing internal goes in here — no
+> server or host names, no share layouts or drive paths, no local checkout
+> paths, no registry ids or accounts, no client names, nothing about how EWS's
+> private repositories are organised or worked on.
 > Credential **key names** are the action's public interface and are fine; a
 > credential **value** never is. Read `.cursor/rules/public-repo-boundary.mdc`
 > before writing anything. It is the first rule for a reason.
@@ -113,5 +114,10 @@ A session dispatched into this repository is briefed from there.
 **This repository has no tracking issue for that trail, deliberately.** It
 would be world-readable. Do not create one.
 
-The hub's name and paths are intentionally not written here — that is the rule
-in `.cursor/rules/public-repo-boundary.mdc` applied to this file.
+A repository instrumented this way normally links, from this section, to the
+per-repository briefing file that a dispatching session loads. **That link is
+omitted here on purpose, because this repository is public** — the path would
+itself disclose how the private side is organised. The omission is a decision,
+not an oversight, and it is the rule in
+`.cursor/rules/public-repo-boundary.mdc` applied to this file. A session
+dispatched here is given that context in its brief instead.

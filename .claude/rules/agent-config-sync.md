@@ -14,8 +14,8 @@ uv run --no-project python scripts/sync_agent_config.py            # regenerate 
 uv run --no-project python scripts/sync_agent_config.py --check    # verify; exit 1 on drift
 ```
 
-**`--no-project` is required here.** Unlike the Python packages in the estate,
-this repository has no `pyproject.toml`, so plain `uv run` fails looking for a
+**`--no-project` is required here.** Unlike the Python packages this action
+serves, this repository has no `pyproject.toml`, so plain `uv run` fails looking for a
 project to sync. The script imports only `argparse`, `filecmp`, `shutil`, `sys`
 and `pathlib`, so it needs no environment at all.
 
@@ -39,7 +39,7 @@ So the trees cannot be byte-identical for rules, and a human mirroring them by
 hand drifts — in another EWS repository four rules that `AGENTS.md` called
 always-on ended up with no Claude counterpart at all.
 
-That failure mode matters more here than anywhere else in the estate: the rule
+That failure mode matters more here than in a private repository: the rule
 most likely to be lost to drift is `public-repo-boundary`, and losing it means
 a session writes internal detail into a world-readable repository.
 

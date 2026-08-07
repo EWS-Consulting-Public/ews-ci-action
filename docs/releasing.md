@@ -95,7 +95,7 @@ the pattern; it exists because the alternative was a shell-injection bug
 
 ## Documentation
 
-`docs/` follows the estate's shape: a `docs/README.md` map, per-file YAML
+`docs/` follows a fixed shape: a `docs/README.md` map, per-file YAML
 `status:` / `covers:` / `last-verified:` headers, and ADRs under
 `docs/decisions/`. Update `last-verified:` when you re-check a page against the
 YAML.

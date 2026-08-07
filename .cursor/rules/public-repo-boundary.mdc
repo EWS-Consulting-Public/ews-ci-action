@@ -6,9 +6,9 @@ alwaysApply: true
 
 # This repository is public
 
-`EWS-Consulting-Public/ews-ci-action` is **world-readable**, and it is the only
-public repository in the estate. Every other repository you may have worked in
-is private; the habits that are safe there are not safe here.
+`EWS-Consulting-Public/ews-ci-action` is **world-readable**. The other EWS
+repositories you may have worked in are private; the habits that are safe there
+are not safe here.
 
 **What is published is not only the working tree.** The commit history, every
 diff, every commit message, and the *edit history* of every issue and comment
@@ -29,8 +29,10 @@ There is no undo.
   `EWS_CREDENTIALS`; that is deliberate, and it is why no URL appears in the
   YAML. Do not "helpfully" document it.
 - **Client names, site names, commercial detail.**
-- **Estate structure** — board numbers, tracker file paths, the hub repository's
-  name, passport names, per-repo issue numbers, how work is coordinated.
+- **How EWS's private repositories are organised or worked on** — the names of
+  private repositories beyond the ones already here, planning board numbers,
+  internal file paths, cross-repository issue numbers, or any description of
+  how work is coordinated between them.
 - **Any credential value.** Not a token, not a password, not a fragment, not an
   example that looks real. Not in a doc, a test fixture, a commit message or an
   issue.
@@ -81,9 +83,9 @@ actual mechanism.
 history, and a silent fix leaves nobody aware of the exposure. Say what you
 found, where, and let Fabien decide. Rewriting public history is his call.
 
-This has already happened once: an estate log issue was opened on this
-repository with the standard body, which named internal repositories and local
+This has already happened once: an issue was opened here using a body template
+written for private repositories, which named internal repositories and local
 paths. It was rewritten to a neutral note within minutes — and the original
 text remains readable in the issue's public edit history. That is why this
-repository deliberately has **no estate log issue**, and why one must not be
-created.
+repository deliberately carries **no long-running internal notes issue**, and
+why one must not be created.
