@@ -103,6 +103,21 @@ has. That is convenient and coarse; naming `EWS_CREDENTIALS` explicitly, as
 above, is the narrower form. `matrix-testing.yml` passes no secrets at all — it
 only works for a package with no private dependencies.
 
+Two of them are behind this page. Copy the snippets above rather than the files:
+
+- **`release-basic.yml` filters `workflow_run` on `branches: ['v*']`.** That is
+  the deprecated pattern § 2 tells you not to use: tag runs are not branch runs,
+  so the filter can stop the release from ever firing, and the reusable workflow
+  already tests `head_branch` for the `v` prefix itself. Delete the `branches:`
+  line if you copy that file.
+- **`basic-package.yml` comments a step "Upload to Codecov" while setting only
+  `run-coverage: true`.** `upload-coverage` defaults to `false`, so coverage is
+  collected and never uploaded. Set `upload-coverage: true` if you meant to
+  upload.
+
+The example files are left as they are on purpose — `examples/` is shipped
+product and is not edited by a documentation change.
+
 ## Customising
 
 ```yaml
