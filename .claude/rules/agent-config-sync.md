@@ -1,7 +1,11 @@
+---
+paths:
+  - "{.claude,.cursor}/**"
+---
 <!-- GENERATED FROM .cursor/rules/agent-config-sync.mdc BY scripts/sync_agent_config.py.
      Edit the .cursor source, then run: uv run python scripts/sync_agent_config.py -->
 
-**Applies to:** `{.claude`, `.cursor}/**`
+**Applies to:** `{.claude,.cursor}/**`
 
 Skip this rule if your change does not touch those paths.
 

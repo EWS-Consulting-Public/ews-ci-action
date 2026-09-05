@@ -6,14 +6,16 @@ edited directly. Run ``--check`` in CI / prek to fail on drift.
     uv run python scripts/sync_agent_config.py            # write .claude/
     uv run python scripts/sync_agent_config.py --check    # exit 1 if out of date
 
-Why a generator instead of the old "mirror both trees by hand" rule: the two tools
-scope rules differently. Cursor rules carry ``globs`` / ``alwaysApply`` frontmatter and
-load only when matching files are open. Claude Code loads **every** ``.claude/rules/*.md``
-unconditionally and has no path-scoping. Hand-mirroring therefore drifted silently -
+Why a generator instead of the old "mirror both trees by hand" rule: the two tools spell
+the same scoping differently. Cursor rules carry ``globs`` / ``alwaysApply`` frontmatter
+and load only when matching files are open. Claude Code reads ``paths:`` frontmatter: a
+rule without it loads into every session, a rule with it loads lazily when a matching
+file is read (documented at code.claude.com/docs/en/memory; ruled for this estate
+2026-08-31 - fabien-context #57). Hand-mirroring drifted silently before the generator -
 four rules that ``AGENTS.md`` calls always-on had no Claude counterpart at all.
 
-The generator resolves that by emitting the Cursor scope as a readable **Applies to**
-header, so a path-scoped rule stays self-gating once it is in Claude's context.
+The generator translates the Cursor ``globs`` into Claude ``paths:`` (always-on rules
+stay frontmatter-free) and keeps a readable **Applies to** header for humans.
 """
 
 from __future__ import annotations
@@ -75,19 +77,51 @@ class Frontmatter:
         )
 
 
-def render_claude_rule(source_name: str, front: Frontmatter) -> str:
-    """Render a Cursor rule as a Claude rule, preserving its scope as prose.
+def split_globs(globs: str) -> list[str]:
+    """Split a Cursor ``globs`` value on commas, keeping brace groups whole.
 
-    Claude Code loads every rule file unconditionally, so the Cursor ``globs`` would
-    otherwise be lost. Emitting them as an **Applies to** line lets the model skip a rule
-    that cannot apply to the change in front of it.
+    ``{.claude,.cursor}/**`` is one glob; a naive ``split(",")`` cuts it in half, which
+    is exactly what the old header rendering did.
     """
-    lines = [GENERATED_BANNER.format(source=source_name), ""]
+    parts: list[str] = []
+    buf, depth = "", 0
+    for ch in globs:
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth = max(0, depth - 1)
+        if ch == "," and depth == 0:
+            if buf.strip():
+                parts.append(buf.strip())
+            buf = ""
+        else:
+            buf += ch
+    if buf.strip():
+        parts.append(buf.strip())
+    return parts
+
+
+def render_claude_rule(source_name: str, front: Frontmatter) -> str:
+    """Render a Cursor rule as a Claude rule, carrying its scope as ``paths:``.
+
+    A rule with ``paths:`` frontmatter loads lazily - when Claude reads a matching
+    file - instead of into every session, matching Cursor's ``globs`` behaviour.
+    Frontmatter must be the first bytes of the file, before the banner comment.
+    Always-on rules stay frontmatter-free so they keep loading at session start.
+    """
+    lines: list[str] = []
+    if front.globs and not front.always_apply:
+        lines.append("---")
+        lines.append("paths:")
+        lines.extend(f'  - "{g}"' for g in split_globs(front.globs))
+        lines.append("---")
+
+    lines.extend([GENERATED_BANNER.format(source=source_name), ""])
 
     if front.always_apply:
         lines.append("**Applies to:** always - this rule is in force for every change.")
     elif front.globs:
-        globs = ", ".join(f"`{g.strip()}`" for g in front.globs.split(",") if g.strip())
+        globs = ", ".join(f"`{g}`" for g in split_globs(front.globs))
         lines.append(f"**Applies to:** {globs}")
         lines.append("")
         lines.append("Skip this rule if your change does not touch those paths.")
