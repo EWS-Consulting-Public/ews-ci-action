@@ -1,0 +1,26 @@
+# CI Workflow - a package whose tests read a dataset held in the bucket
+#
+# The plan selects what the tests need; its committed lock keys a cache of
+# the data root, so the fetch is paid once per change of the data, not per
+# run. The package must depend on ews-gcp-utils, and its EWS_CREDENTIALS must
+# carry gcp_default_key (docs/workflows.md § The data plan).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/ci.yml@v1
+    with:
+      python-versions: '["3.12"]'
+      data-plan: config/plans/fixtures.yaml
+      ews-credentials-keys: ${{ vars.EWS_CREDENTIALS_KEYS }}
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}

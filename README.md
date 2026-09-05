@@ -33,8 +33,8 @@ coverage, and a wheel build that runs only after both pass.
 
 | Path | What it is |
 | --- | --- |
-| [`.github/actions/setup-ews-ci`](.github/actions/setup-ews-ci/action.yml) | Composite action: installs uv + Python, writes registry auth and credential files onto the runner, optionally `uv sync` |
-| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Reusable workflow: `check-skip` → `lint` → `test` (matrix) → `build` |
+| [`.github/actions/setup-ews-ci`](.github/actions/setup-ews-ci/action.yml) | Composite action: installs uv + Python, exports every `EWS_CREDENTIALS` key and the data root to the job, writes registry auth onto the runner, optionally `uv sync` |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Reusable workflow: `check-skip` → `lint` → `test` (matrix, with an optional cached dataset plan) → `build` |
 | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Reusable workflow: on a green tagged CI run, build, publish to the registry, create a GitHub release |
 | [`examples/`](examples/) | Copy-paste caller workflows |
 
@@ -47,8 +47,12 @@ own pushes.
   used with `--frozen` when present.
 - `ruff`, `pytest` and (for `use-nox-build`, the default) a `nox` session
   named `build` available through `uv`.
-- An `EWS_CREDENTIALS` repository secret — a single JSON object. See
+- An `EWS_CREDENTIALS` repository secret — a single JSON object, every key of
+  which the action exports to the job as an environment variable. See
   [docs/credentials.md](docs/credentials.md).
+- Optionally, a data plan: `data-plan: config/plans/<name>.yaml` fetches the
+  tests' dataset once and caches it on the plan's committed lock. See
+  [docs/workflows.md](docs/workflows.md) § *The data plan*.
 - Linux runners. Every step is `shell: bash` and writes to `~/.config`.
 
 ## Versioning

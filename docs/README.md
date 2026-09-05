@@ -17,14 +17,14 @@ flowchart TD
     CALL["consuming repo<br/>.github/workflows/ci.yml"] -->|"uses: …/ci.yml@v1"| CI
     subgraph CI["ci.yml (reusable)"]
         SKIP[check-skip] --> LINT[lint · ruff]
-        SKIP --> TEST["test · pytest matrix"]
+        SKIP --> TEST["test · pytest matrix<br/>(data-plan: cache + plan-ensure first)"]
         LINT --> BUILD[build · wheel]
         TEST --> BUILD
     end
     LINT -.-> SETUP
     TEST -.-> SETUP
     BUILD -.-> SETUP
-    SETUP["setup-ews-ci (composite)<br/>uv · Python · ~/.netrc · ~/.config/ews"]
+    SETUP["setup-ews-ci (composite)<br/>uv · Python · every credential key → $GITHUB_ENV<br/>EWS_DATA_ROOT · ~/.netrc · ~/.config/ews"]
     BUILD --> ART[dist/ artifact]
     CI -->|"workflow_run, tag v*, success"| REL
     subgraph REL["release.yml (reusable)"]
@@ -75,6 +75,7 @@ Reading order for someone new: this file, then `adopting.md`, then
 | [0003](decisions/0003-dataset-cache-redirected-into-the-workspace.md) | The dataset system cache is redirected into the workspace, because the runner's default location is not writable |
 | [0004](decisions/0004-v1-is-a-moving-major-tag.md) | `v1` is force-moved to the newest `v1.x`; consumers track a major version, not a commit |
 | [0005](decisions/0005-release-rebuilds-rather-than-downloading.md) | `release.yml` rebuilds the wheel instead of downloading CI's artifact |
+| [0006](decisions/0006-data-plan-caches-the-data-root-on-the-plan-lock.md) | `data-plan:` caches the whole data root keyed on the plan's committed lock, and `plan-ensure` always runs |
 
 ## Not carried forward from the pre-2026-08-07 docs
 
@@ -100,37 +101,33 @@ Restoring any of these is a deliberate choice, not a gap to be quietly filled.
 
 Recorded rather than answered, because nothing in the YAML settles them.
 
-- **`ews-credentials-keys` is threaded through four layers and never read.**
-  The input is declared on the composite action
-  (`action.yml:17-20`), exported as `EWS_CREDENTIALS_KEYS` into the setup
-  step's environment (`action.yml:38`), declared on both workflows
-  (`ci.yml:56-60`, `release.yml:16-20`) and forwarded at four call sites
-  (`ci.yml:112`, `:137`, `:167`, `release.yml:49`) — but **no script anywhere
-  in this repository reads that variable.** The validation the input's own
-  description promises does not exist. Verified 2026-08-07 by
-  `grep -rn 'EWS_CREDENTIALS_KEYS' .github/`, which returns only the
-  declaration and the forwarding. Consumers who set the repository variable
-  get no check; consumers who omit it lose nothing.
 - **`upload-coverage` defaults to `false` while `run-coverage` defaults to
-  `true`** (`ci.yml:27-35`), so coverage is collected on every run and
+  `true`**, so coverage is collected on every run and
   uploaded on none unless the caller opts in. Whether that is the intent or a
   drifted default is not recorded.
 - **The Codecov upload condition compares a string to a JSON array element**
-  (`ci.yml:148`): `matrix.python-version == fromJSON(inputs.python-versions)[0]`.
+  (the Codecov upload step's `if:`): `matrix.python-version == fromJSON(inputs.python-versions)[0]`.
   It is meant to upload once, from the first matrix entry. Not exercised here,
   because `upload-coverage` is off by default.
 - **`check-skip` reads `github.event.head_commit.message`**, which is empty on
-  `pull_request` events (`ci.yml:77`). `[skip ci]` in a PR's head commit
+  `pull_request` events (the `check-skip` job). `[skip ci]` in a PR's head commit
   therefore does not skip; only pushes are skippable.
 - **The `~/.config/ews/` flat copy is labelled "for old tests"**
-  (`action.yml:167-170`) with no reference to which tests or which package.
-  Whether anything still reads the flat location is unknown.
+  with no reference to which tests or which package. Whether anything still
+  reads the flat location is unknown.
+
+Two earlier entries closed on 2026-09-05: `ews-credentials-keys` is now read
+(the setup step validates the secret against it and fails naming missing
+keys), and `EWS_DATASETS_SYSTEM_CACHE_PATH` now reaches `$GITHUB_ENV`
+([ADR 0003](decisions/0003-dataset-cache-redirected-into-the-workspace.md)
+§ *Update*).
 
 ## Not verified
 
-- **No workflow was executed while writing these docs.** Every behaviour
-  described is read from the YAML in this repository, not observed on a runner.
-  No credential was exercised, no publish was run.
+- **`release.yml` has not been observed running** while writing these docs.
+  The composite action's credential block was exercised locally, and the
+  `ci.yml` data plan steps on a runner, on 2026-09-05 — the pages say where.
+  No publish was run.
 - The consuming side — which repositories call these workflows, and whether
   their `nox -s build` / `nox -s publish` sessions exist — was not surveyed.
 - `astral-sh/setup-uv@v7`, `codecov/codecov-action@v4`,

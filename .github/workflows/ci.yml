@@ -54,13 +54,18 @@ on:
         required: false
         default: ""
       ews-credentials-keys:
-        description: "JSON array of expected credential keys for validation (optional)"
+        description: "Repository variable EWS_CREDENTIALS_KEYS - JSON array of the keys EWS_CREDENTIALS must carry; setup fails naming any that are missing (optional)"
+        type: string
+        required: false
+        default: ""
+      data-plan:
+        description: "Path of a data plan (config/plans/<name>.yaml) whose committed lock keys a cache of the data root; the test job restores it, runs 'ews-gcp plan-ensure', and saves on a miss. Empty: no data step. Needs ews-gcp-utils among the package's dependencies and a gcp_default_key in EWS_CREDENTIALS."
         type: string
         required: false
         default: ""
     secrets:
       EWS_CREDENTIALS:
-        description: "JSON object with all EWS credentials (gitlab_api_token, gitlab_api_read_token, gitlab_package_registry_url, ammonit_or_password, windcube_insights_password)"
+        description: "JSON object with all EWS credentials, as written by 'ews-github configure'; every key is exported to the job as UPPER(key)"
         required: false
 
 jobs:
@@ -135,6 +140,70 @@ jobs:
           install-dependencies: "true"
           ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
           ews-credentials-keys: ${{ inputs.ews-credentials-keys }}
+
+      # The data plan, when the caller names one: the cache is the data root
+      # the composite action exported (EWS_DATA_ROOT), keyed on the plan's
+      # committed lock; plan-ensure always runs, so a stale prefix restore is
+      # repaired rather than trusted, and the save happens before the tests
+      # so a red test still leaves a warm cache.
+      - name: Resolve the data plan
+        if: inputs.data-plan != ''
+        id: data-plan
+        env:
+          # Through env, not interpolated: the value is a path a consumer wrote.
+          DATA_PLAN: ${{ inputs.data-plan }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "${DATA_PLAN}" ]; then
+            echo "::error::data-plan '${DATA_PLAN}' is not a file in the checkout"
+            exit 1
+          fi
+          LOCK="${DATA_PLAN%.*}.lock.json"
+          if [ ! -f "${LOCK}" ]; then
+            echo "::error::no lock beside the plan (expected ${LOCK}). Write and commit it: uv run ews-gcp plan-lock ${DATA_PLAN}"
+            exit 1
+          fi
+          KEY="ews-data-${RUNNER_OS}-$(sha256sum "${LOCK}" | cut -c1-16)"
+          echo "lock=${LOCK}" >> "${GITHUB_OUTPUT}"
+          echo "key=${KEY}" >> "${GITHUB_OUTPUT}"
+          echo "plan ${DATA_PLAN} -> lock ${LOCK} -> cache key ${KEY}"
+
+      - name: Restore the data root from the cache
+        if: inputs.data-plan != ''
+        id: data-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/.ews-data
+          key: ${{ steps.data-plan.outputs.key }}
+          restore-keys: |
+            ews-data-${{ runner.os }}-
+
+      - name: Fetch what the cache did not have
+        if: inputs.data-plan != ''
+        env:
+          DATA_PLAN: ${{ inputs.data-plan }}
+          CACHE_HIT: ${{ steps.data-cache.outputs.cache-hit }}
+          CACHE_KEY: ${{ steps.data-plan.outputs.key }}
+        run: |
+          set -euo pipefail
+          SECONDS=0
+          uv run ews-gcp plan-ensure "${DATA_PLAN}"
+          if [ "${CACHE_HIT}" = "true" ]; then outcome="hit"; else outcome="miss"; fi
+          echo "⏱️  plan-ensure took ${SECONDS}s after a cache ${outcome} on ${CACHE_KEY}"
+          {
+            echo "### Data plan ${DATA_PLAN}"
+            echo ""
+            echo "| cache | key | plan-ensure |"
+            echo "| --- | --- | --- |"
+            echo "| ${outcome} | ${CACHE_KEY} | ${SECONDS} s |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Save the data root to the cache
+        if: inputs.data-plan != '' && steps.data-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/.ews-data
+          key: ${{ steps.data-plan.outputs.key }}
 
       - name: Run tests
         if: ${{ !inputs.run-coverage }}

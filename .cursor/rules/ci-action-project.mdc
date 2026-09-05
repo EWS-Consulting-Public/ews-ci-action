@@ -1,5 +1,5 @@
 ---
-description: ews-ci-action scope and boundaries - reusable GitHub Actions YAML, not a Python package; consumers pin @v1 so every change ships to all of them at once; never remove or rename an input, never move the v1 tag, never interpolate untrusted values into run blocks; uv run --no-project on Windows
+description: ews-ci-action scope and boundaries - reusable GitHub Actions YAML, not a Python package; consumers pin @v1 so every change ships to all of them at once; every EWS_CREDENTIALS key is exported as UPPER(key) so a new credential needs no change here; never remove or rename an input, never move the v1 tag, never interpolate untrusted values into run blocks; uv run --no-project on Windows
 globs:
 alwaysApply: true
 ---
@@ -48,7 +48,7 @@ Adding to that list is a **breaking change**, even when no input changed.
   more than one consumer.
 - **Never interpolate `${{ }}` into a `run:` block** for anything
   attacker-controlled — commit message, tag, branch name, PR title, issue text.
-  Pass it through `env:` and use the shell variable. `ci.yml:74-77` is the
+  Pass it through `env:` and use the shell variable. the `check-skip` job's `COMMIT_MSG` block is the
   pattern; commit `952e37c` is why.
 - **Never echo a parsed credential.** `jq` output is a fresh string and is not
   covered by GitHub's masking of the original secret.
@@ -63,16 +63,24 @@ Adding to that list is a **breaking change**, even when no input changed.
 
 Check `docs/README.md` § *Open questions* before "fixing" any of these:
 
-- `ews-credentials-keys` is threaded through four layers and read by nothing.
 - `run-coverage` defaults `true` while `upload-coverage` defaults `false`.
-- `EWS_DATASETS_SYSTEM_CACHE_PATH` is step-scoped and never reaches
-  `$GITHUB_ENV`, so later steps do not see it (ADR 0003).
 - `check-skip` reads `github.event.head_commit.message`, empty on
   `pull_request`.
 - The `~/.config/ews/` flat copy exists "for old tests" that are not named.
 
 They are real, they are written down, and changing any of them ships to every
 consumer at once. Propose before acting.
+
+## How a credential reaches the runner
+
+Every key of `EWS_CREDENTIALS` is exported to the job as `UPPER(key)` — the
+flat environment name the EWS configuration layer reads — after validation
+against `EWS_CREDENTIALS_KEYS`. **A new credential needs no change here**:
+add it where the payload is composed, re-run the tooling on the repository,
+and the runner has it. Never add a `jq` extraction for a named key; never
+write a new TOML file for one. `EWS_DATA_ROOT` is exported the same way, and
+`ci.yml`'s `data-plan:` input caches that directory on a plan's committed
+lock (ADR 0006).
 
 ## Tooling
 

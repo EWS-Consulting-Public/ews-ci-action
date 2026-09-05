@@ -7,8 +7,16 @@ last-verified: 2026-08-07
 # ADR 0003 — The dataset system cache is redirected into the workspace
 
 **Date:** recorded 2026-08-07 from `action.yml`
-**Status:** accepted, **but see § Consequences — the override does not reach
-later steps**
+**Status:** accepted; the scoping defect recorded below was fixed 2026-09-05
+(§ *Update*)
+
+## Update, 2026-09-05
+
+The variable is now written to `$GITHUB_ENV` by the setup script, beside
+`EWS_DATA_ROOT`, so every later step of the job sees it — the one line the
+§ Consequences below said was missing. The text below is kept as the record
+of what the action did between 2026-06 and 2026-09 and why the fix was one
+line; `line` references in it are to the pre-fix file.
 
 ## Context
 

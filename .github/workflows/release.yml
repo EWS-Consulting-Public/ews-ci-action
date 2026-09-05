@@ -14,7 +14,7 @@ on:
         required: false
         default: true
       ews-credentials-keys:
-        description: "Repository variable - JSON array of expected credential keys (optional)"
+        description: "Repository variable EWS_CREDENTIALS_KEYS - JSON array of the keys EWS_CREDENTIALS must carry; setup fails naming any that are missing (optional)"
         type: string
         required: false
         default: ""

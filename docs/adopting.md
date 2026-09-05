@@ -95,13 +95,15 @@ tag's run is the one that matters.
 
 ## Examples
 
-[`examples/`](../examples/) holds three copy-paste callers:
-`basic-package.yml`, `matrix-testing.yml`, `release-basic.yml`.
+[`examples/`](../examples/) holds copy-paste callers:
+`basic-package.yml`, `matrix-testing.yml`, `release-basic.yml`, and
+`dataset-plan.yml` for a package whose tests read a dataset from the bucket
+(§ *Customising* below).
 
-They use `secrets: inherit`, which passes every secret the caller repository
-has. That is convenient and coarse; naming `EWS_CREDENTIALS` explicitly, as
-above, is the narrower form. `matrix-testing.yml` passes no secrets at all — it
-only works for a package with no private dependencies.
+The first three use `secrets: inherit`, which passes every secret the caller
+repository has. That is convenient and coarse; naming `EWS_CREDENTIALS`
+explicitly, as above, is the narrower form. `matrix-testing.yml` passes no
+secrets at all — it only works for a package with no private dependencies.
 
 Two of them are behind this page. Copy the snippets above rather than the files:
 
@@ -126,7 +128,14 @@ with:
   pytest-args: '-m "not slow"' # narrow the test run
   upload-coverage: true # actually send coverage to Codecov
   use-nox-build: false # uv build --wheel instead of nox
+  ews-credentials-keys: ${{ vars.EWS_CREDENTIALS_KEYS }} # fail early if the secret is stale
+  data-plan: config/plans/fixtures.yaml # fetch the tests' dataset once, cache it on the plan's lock
 ```
+
+`data-plan` needs three things of the package: `ews-gcp-utils` among its
+dependencies, a committed lock beside the plan, and `gcp_default_key` in its
+`EWS_CREDENTIALS`. What the job then does, and why the cache is shaped that
+way: [workflows.md](workflows.md) § *The data plan*.
 
 Full input tables: [workflows.md](workflows.md).
 

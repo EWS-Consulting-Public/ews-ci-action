@@ -27,7 +27,7 @@ runner, and what silently does nothing — not an API.
 .github/actions/setup-ews-ci/action.yml   the composite action - uv, Python, credential files
 .github/workflows/ci.yml                  reusable: check-skip -> lint -> test (matrix) -> build
 .github/workflows/release.yml             reusable: on a green tagged CI run, build, publish, release
-examples/                                 three copy-paste caller workflows
+examples/                                 copy-paste caller workflows
 docs/                                     documentation map + ADRs
 scripts/sync_agent_config.py              generates .claude/ from .cursor/
 .cursor/ .claude/                         rules (.cursor authored, .claude generated)
@@ -59,11 +59,12 @@ at `@my-branch` instead of `@v1`. See [`docs/releasing.md`](docs/releasing.md).
 1. [`docs/README.md`](docs/README.md) — the documentation map, the flow
    diagram, the status legend, and § *Open questions* (five things the YAML
    does not settle — check there before concluding something is a bug).
-2. [`docs/decisions/`](docs/decisions/) — five ADRs. If you are about to
+2. [`docs/decisions/`](docs/decisions/) — the ADRs. If you are about to
    propose splitting `EWS_CREDENTIALS` into separate secrets, converting the
    composite action to JavaScript, having the release job download CI's
-   artifact, or pinning consumers to exact tags — that argument is already
-   recorded. Read the ADR before reopening it.
+   artifact, pinning consumers to exact tags, or caching a dataset by its
+   own paths rather than the data root — that argument is already recorded.
+   Read the ADR before reopening it.
 3. Always-on rules `public-repo-boundary` (what may never be written here) and
    `ci-action-project` (the scope, the consumer contract, the do-nots).
 
@@ -78,9 +79,14 @@ the action writes), [`workflows.md`](docs/workflows.md) (every input),
   rule `public-repo-boundary`. This includes commit messages, issue text and
   code comments — all world-readable, all permanent.
 - **Never copy a credential value** anywhere. Key names only.
+- **Never make the action know a credential key by name to export it.** Every
+  key of `EWS_CREDENTIALS` is exported as `UPPER(key)`, which is the flat
+  environment name the EWS configuration layer reads; a new key needs no
+  change here. The five files the script still writes are for `uv`, `twine`
+  and two packages that read a TOML — not the route for a new credential.
 - **Never interpolate `${{ }}` into a `run:` block** when the value is
   attacker-controlled — a commit message, tag, branch name or PR title. Pass it
-  through `env:` and reference the shell variable. `ci.yml:74-77` is the
+  through `env:` and reference the shell variable. the `check-skip` job's `COMMIT_MSG` block is the
   pattern, and it exists because the alternative was a shell-injection bug
   (`952e37c`).
 - **Never move the `v1` tag** as part of a routine change. It is force-pushed

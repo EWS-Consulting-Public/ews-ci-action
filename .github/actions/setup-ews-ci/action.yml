@@ -1,5 +1,5 @@
 name: Setup EWS CI Environment
-description: Configure uv, Python, and GitLab Package Registry for EWS packages
+description: Configure uv, Python, the GitLab Package Registry and every EWS credential for EWS packages
 
 inputs:
   python-version:
@@ -11,11 +11,11 @@ inputs:
     required: false
     default: "true"
   ews-credentials:
-    description: 'Repository secret EWS_CREDENTIALS - JSON object with all EWS credentials {keys: gitlab_api_read_token, gitlab_api_token, gitlab_package_registry_url, ammonit_or_password, windcube_insights_password   }'
+    description: 'Repository secret EWS_CREDENTIALS - a JSON object; every key is exported to later steps as UPPER(key), which is the flat environment name the EWS config layer reads'
     required: false
     default: ''
   ews-credentials-keys:
-    description: 'Repository variable EWS_CREDENTIALS_KEYS - JSON array of expected credential keys for validation'
+    description: 'Repository variable EWS_CREDENTIALS_KEYS - JSON array of the keys EWS_CREDENTIALS must carry; the step fails naming any that are missing'
     required: false
     default: ''
 
@@ -37,17 +37,15 @@ runs:
         EWS_CREDENTIALS: ${{ inputs.ews-credentials }}
         EWS_CREDENTIALS_KEYS: ${{ inputs.ews-credentials-keys }}
         GITHUB_TOKEN: ${{ github.token }}
-        # Override system cache to user-writable location in CI
-        EWS_DATASETS_SYSTEM_CACHE_PATH: ${{ github.workspace }}/.cache/ews/datasets
       run: |
+        set -euo pipefail
         echo "🔧 Setting up EWS CI environment..."
-        
+
         mkdir -p ~/.config/ews/dataset_registries
         mkdir -p ~/.config/ews/config
         mkdir -p ~/.config/uv
         mkdir -p ~/.cache/ews/datasets
-        mkdir -p ${{ github.workspace }}/.cache/ews/datasets
-        
+
         # ============================================================
         # 1. GitHub token (from runner context)
         # ============================================================
@@ -63,36 +61,87 @@ runs:
         else
           echo "⚠️  No GitHub token available"
         fi
-        
+
         # ============================================================
-        # 2. Parse EWS_CREDENTIALS JSON (repository secret)
+        # 2. EWS_CREDENTIALS -> validate against EWS_CREDENTIALS_KEYS,
+        #    then export EVERY key to later steps as UPPER(key)
         # ============================================================
-        if [ -n "${EWS_CREDENTIALS}" ]; then
-          echo "📦 Parsing EWS_CREDENTIALS JSON..."
-          
-          # Extract all credentials using jq
-          GITLAB_API_TOKEN=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_token // empty')
-          GITLAB_API_READ_TOKEN=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_api_read_token // empty')
-          GITLAB_PACKAGE_REGISTRY_URL=$(echo "$EWS_CREDENTIALS" | jq -r '.gitlab_package_registry_url // empty')
-          AMMONIT_OR_PASSWORD=$(echo "$EWS_CREDENTIALS" | jq -r '.ammonit_or_password // empty')
-          WINDCUBE_INSIGHTS_PASSWORD=$(echo "$EWS_CREDENTIALS" | jq -r '.windcube_insights_password // empty')
-          
-          echo "✅ Credentials extracted from JSON"
+        # The payload keys are <section>_<field> of the EWS config layer,
+        # so UPPER(key) is exactly the flat environment name that layer
+        # reads (gcp_default_key -> GCP_DEFAULT_KEY fills [gcp].default_key).
+        # Nothing below needs to know a key by name to make it reachable.
+        if [ -z "${EWS_CREDENTIALS}" ]; then
+          echo "⚠️  No EWS_CREDENTIALS provided - no credential is exported and no credential-derived file is written"
         else
-          echo "⚠️  No EWS_CREDENTIALS provided"
-          GITLAB_API_TOKEN=""
-          GITLAB_API_READ_TOKEN=""
-          GITLAB_PACKAGE_REGISTRY_URL=""
-          AMMONIT_OR_PASSWORD=""
-          WINDCUBE_INSIGHTS_PASSWORD=""
+          if ! printf '%s' "${EWS_CREDENTIALS}" | jq -e 'type == "object"' > /dev/null 2>&1; then
+            echo "::error::EWS_CREDENTIALS is not a JSON object - it must be the payload written by 'ews-github configure'"
+            exit 1
+          fi
+          have_json=$(printf '%s' "${EWS_CREDENTIALS}" | jq -c 'keys')
+
+          if [ -n "${EWS_CREDENTIALS_KEYS}" ]; then
+            if ! printf '%s' "${EWS_CREDENTIALS_KEYS}" | jq -e 'type == "array"' > /dev/null 2>&1; then
+              echo "::error::EWS_CREDENTIALS_KEYS is not a JSON array"
+              exit 1
+            fi
+            missing=$(jq -n -r --argjson want "${EWS_CREDENTIALS_KEYS}" --argjson have "${have_json}" '($want - $have)[]' | tr -d '\r')
+            if [ -n "${missing}" ]; then
+              echo "::error::EWS_CREDENTIALS is missing keys that EWS_CREDENTIALS_KEYS names: $(echo "${missing}" | tr '\n' ' ')- re-run 'ews-github configure' on this repository"
+              exit 1
+            fi
+            echo "✅ EWS_CREDENTIALS carries every key EWS_CREDENTIALS_KEYS names ($(printf '%s' "${EWS_CREDENTIALS_KEYS}" | jq 'length') keys)"
+          else
+            echo "ℹ️  No EWS_CREDENTIALS_KEYS - the payload is not validated"
+          fi
+
+          # tr -d '\r': jq on a Windows shell ends lines with CRLF
+          for key in $(printf '%s' "${have_json}" | jq -r '.[]' | tr -d '\r'); do
+            if ! [[ "${key}" =~ ^[A-Za-z][A-Za-z0-9_-]*$ ]]; then
+              echo "⚠️  Skipping key '${key}': not a valid environment variable name"
+              continue
+            fi
+            value=$(printf '%s' "${EWS_CREDENTIALS}" | jq -r --arg k "${key}" '.[$k] | if . == null then "" else tostring end' | tr -d '\r')
+            if [ -z "${value}" ]; then
+              echo "ℹ️  ${key} is empty, not exported"
+              continue
+            fi
+            name=$(printf '%s' "${key}" | tr '[:lower:]-' '[:upper:]_')
+            # A parsed value is a fresh string, outside GitHub's masking of
+            # the whole secret; mask it line by line before it can be logged.
+            while IFS= read -r line; do
+              [ -n "${line}" ] && echo "::add-mask::${line}"
+            done <<< "${value}"
+            {
+              echo "${name}<<__EWS_CREDENTIAL_EOF__"
+              printf '%s\n' "${value}"
+              echo "__EWS_CREDENTIAL_EOF__"
+            } >> "${GITHUB_ENV}"
+            export "${name}=${value}"
+            echo "✅ Exported ${name}"
+          done
         fi
-        
+
         # ============================================================
-        # 3. GitLab Package Registry Setup (.netrc + uv.toml)
+        # 3. The data root for dataset documents and plans (ews-gcp-utils)
+        #    and the dataset system cache (ews-datasets) - both inside the
+        #    workspace, the one path a runner guarantees writable, and
+        #    both exported to every later step of the job.
         # ============================================================
-        if [ -n "${GITLAB_API_READ_TOKEN}" ] && [ -n "${GITLAB_PACKAGE_REGISTRY_URL}" ]; then
+        EWS_DATA_ROOT="${GITHUB_WORKSPACE}/.ews-data"
+        mkdir -p "${EWS_DATA_ROOT}"
+        echo "EWS_DATA_ROOT=${EWS_DATA_ROOT}" >> "${GITHUB_ENV}"
+        echo "✅ EWS_DATA_ROOT=${EWS_DATA_ROOT}"
+
+        EWS_DATASETS_SYSTEM_CACHE_PATH="${GITHUB_WORKSPACE}/.cache/ews/datasets"
+        mkdir -p "${EWS_DATASETS_SYSTEM_CACHE_PATH}"
+        echo "EWS_DATASETS_SYSTEM_CACHE_PATH=${EWS_DATASETS_SYSTEM_CACHE_PATH}" >> "${GITHUB_ENV}"
+
+        # ============================================================
+        # 4. GitLab Package Registry Setup (.netrc + uv.toml)
+        # ============================================================
+        if [ -n "${GITLAB_API_READ_TOKEN:-}" ] && [ -n "${GITLAB_PACKAGE_REGISTRY_URL:-}" ]; then
           echo "🔐 Configuring GitLab Package Registry..."
-          
+
           # Create .netrc for HTTP basic auth (used by uv/pip)
           cat > ~/.netrc <<EOF
         machine gitlab.com
@@ -101,7 +150,7 @@ runs:
         EOF
           chmod 600 ~/.netrc
           echo "✅ Created ~/.netrc for gitlab.com"
-          
+
           # Configure uv index with URL from credentials
           cat > ~/.config/uv/uv.toml <<EOF
         [[index]]
@@ -116,16 +165,16 @@ runs:
         else
           echo "ℹ️  No GitLab read token or package registry URL, skipping package registry setup"
         fi
-        
+
         # ============================================================
-        # 4. GitLab PyPI Upload (.pypirc for twine)
+        # 5. GitLab PyPI Upload (.pypirc for twine)
         # ============================================================
-        if [ -n "${GITLAB_API_TOKEN}" ] && [ -n "${GITLAB_PACKAGE_REGISTRY_URL}" ]; then
+        if [ -n "${GITLAB_API_TOKEN:-}" ] && [ -n "${GITLAB_PACKAGE_REGISTRY_URL:-}" ]; then
           cat > ~/.pypirc <<EOF
         [distutils]
         index-servers =
             gitlab
-        
+
         [gitlab]
         repository = ${GITLAB_PACKAGE_REGISTRY_URL}
         username = __token__
@@ -136,11 +185,11 @@ runs:
         else
           echo "ℹ️  No GitLab API token or package registry URL, skipping .pypirc creation"
         fi
-        
+
         # ============================================================
-        # 5. EWS Package Credentials (Ammonit-OR, Windcube Insights)
+        # 6. EWS Package Credentials (Ammonit-OR, Windcube Insights)
         # ============================================================
-        if [ -n "${AMMONIT_OR_PASSWORD}" ]; then
+        if [ -n "${AMMONIT_OR_PASSWORD:-}" ]; then
           cat > ~/.config/ews/config/ammonit-or.toml <<EOF
         [ammonit-or]
         email = "wm@ews-consulting.com"
@@ -151,8 +200,8 @@ runs:
         else
           echo "ℹ️  No Ammonit-OR password"
         fi
-        
-        if [ -n "${WINDCUBE_INSIGHTS_PASSWORD}" ]; then
+
+        if [ -n "${WINDCUBE_INSIGHTS_PASSWORD:-}" ]; then
           cat > ~/.config/ews/config/windcube-insights.toml <<EOF
         [windcube-insights]
         email = "wm@ews-consulting.at"
@@ -163,12 +212,12 @@ runs:
         else
           echo "ℹ️  No Windcube Insights password"
         fi
-        
+
         # Compatibility: Copy config files to parent directory for old tests
         if ls ~/.config/ews/config/*.toml 1> /dev/null 2>&1; then
           cp ~/.config/ews/config/*.toml ~/.config/ews/
         fi
-        
+
         echo "✅ EWS CI environment setup complete"
 
     - name: Install dependencies
