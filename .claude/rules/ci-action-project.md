@@ -47,7 +47,7 @@ Adding to that list is a **breaking change**, even when no input changed.
   more than one consumer.
 - **Never interpolate `${{ }}` into a `run:` block** for anything
   attacker-controlled — commit message, tag, branch name, PR title, issue text.
-  Pass it through `env:` and use the shell variable. the `check-skip` job's `COMMIT_MSG` block is the
+  Pass it through `env:` and use the shell variable. The `check-skip` job's `COMMIT_MSG` block is the
   pattern; commit `952e37c` is why.
 - **Never echo a parsed credential.** `jq` output is a fresh string and is not
   covered by GitHub's masking of the original secret.

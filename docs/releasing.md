@@ -52,8 +52,10 @@ git push origin v2
 Force-pushing `v1` is deliberate and is the only place in this repository where
 that is correct.
 
-**Current state (2026-08-07):** tags are `v1` and `v1.0`, both lightweight and
-both on `952e37c`. The `-a` form above creates annotated tags; the existing
+**Current state (2026-09-05):** `v1` was moved to `33e94f6` on 2026-09-05 (the
+credential export and `data-plan:` change); `v1.0` still marks `952e37c`. Both
+are lightweight and
+not annotated. The `-a` form above creates annotated tags; the existing
 ones are not.
 
 ## What counts as breaking
@@ -89,7 +91,7 @@ Not breaking:
 
 Anything derived from a commit message, a tag, a branch name or a PR title is
 attacker-controlled. Pass it through `env:` and reference it as a shell
-variable — never interpolate `${{ }}` into a `run:` block. `ci.yml:74-77` is
+variable — never interpolate `${{ }}` into a `run:` block. The `check-skip` job's `COMMIT_MSG` block is
 the pattern; it exists because the alternative was a shell-injection bug
 (commit `952e37c`).
 

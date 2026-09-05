@@ -57,7 +57,7 @@ at `@my-branch` instead of `@v1`. See [`docs/releasing.md`](docs/releasing.md).
 ## Read before editing
 
 1. [`docs/README.md`](docs/README.md) — the documentation map, the flow
-   diagram, the status legend, and § *Open questions* (five things the YAML
+   diagram, the status legend, and § *Open questions* (the things the YAML
    does not settle — check there before concluding something is a bug).
 2. [`docs/decisions/`](docs/decisions/) — the ADRs. If you are about to
    propose splitting `EWS_CREDENTIALS` into separate secrets, converting the
@@ -86,7 +86,7 @@ the action writes), [`workflows.md`](docs/workflows.md) (every input),
   and two packages that read a TOML — not the route for a new credential.
 - **Never interpolate `${{ }}` into a `run:` block** when the value is
   attacker-controlled — a commit message, tag, branch name or PR title. Pass it
-  through `env:` and reference the shell variable. the `check-skip` job's `COMMIT_MSG` block is the
+  through `env:` and reference the shell variable. The `check-skip` job's `COMMIT_MSG` block is the
   pattern, and it exists because the alternative was a shell-injection bug
   (`952e37c`).
 - **Never move the `v1` tag** as part of a routine change. It is force-pushed
