@@ -42,7 +42,7 @@ file it would feed is skipped.
 | `gitlab_package_registry_url` | `GITLAB_PACKAGE_REGISTRY_URL` | both of the above, and `~/.pypirc` | Both paths; required alongside either token |
 | `gitlab_api_token` | `GITLAB_API_TOKEN` | `~/.pypirc` | **Publishing** during a release |
 | `gitlab_package_registry_id` | `GITLAB_PACKAGE_REGISTRY_ID` | — | The EWS GitLab tooling, when a test reaches the registry API |
-| `gcp_default_key` | `GCP_DEFAULT_KEY` | — | **Fetching datasets** from the bucket — `ews-gcp plan-ensure`, and so `ci.yml`'s `data-plan:` input |
+| `gcp_default_key` | `GCP_DEFAULT_KEY` | — | **Fetching datasets** from the bucket — `ews-storage plan ensure`, and so `ci.yml`'s `data-plan:` input |
 | `ammonit_or_password` | `AMMONIT_OR_PASSWORD` | `~/.config/ews/config/ammonit-or.toml` | Packages whose tests reach that data source |
 | `windcube_insights_password` | `WINDCUBE_INSIGHTS_PASSWORD` | `~/.config/ews/config/windcube-insights.toml` | Same |
 
