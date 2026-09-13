@@ -132,7 +132,7 @@ with:
   data-plan: config/plans/fixtures.yaml # fetch the tests' dataset once, cache it on the plan's lock
 ```
 
-`data-plan` needs three things of the package: `ews-gcp-utils` among its
+`data-plan` needs three things of the package: `ews-cloud-storage` among its
 dependencies, a committed lock beside the plan, and `gcp_default_key` in its
 `EWS_CREDENTIALS`. What the job then does, and why the cache is shaped that
 way: [workflows.md](workflows.md) § *The data plan*.

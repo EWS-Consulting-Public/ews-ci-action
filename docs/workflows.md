@@ -27,7 +27,7 @@ Source: [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 | `upload-artifacts` | boolean | `true` | Upload `dist/` for 7 days |
 | `pytest-args` | string | `""` | Extra pytest arguments, e.g. `-m "not fails_in_ci"` |
 | `ews-credentials-keys` | string | `""` | Forwarded to the composite action, which fails the job if `EWS_CREDENTIALS` lacks a key it names |
-| `data-plan` | string | `""` | Path of a data plan in the checkout. Non-empty: the `test` job caches the data root on the plan's lock and runs `ews-gcp plan-ensure` before pytest — § *The data plan* |
+| `data-plan` | string | `""` | Path of a data plan in the checkout. Non-empty: the `test` job caches the data root on the plan's lock and runs `ews-storage plan ensure` before pytest — § *The data plan* |
 
 Secret: `EWS_CREDENTIALS`, **not required** by `ci.yml`. Omitting it is only
 viable for a package with no private dependencies.
@@ -67,7 +67,7 @@ each skipped entirely when the input is empty:
 2. **Restore** `actions/cache/restore@v4` on the data root the composite
    action exported (`$GITHUB_WORKSPACE/.ews-data`), under that key, with
    `ews-data-<OS>-` as the prefix fallback.
-3. **Fetch** `uv run ews-gcp plan-ensure <plan>` — **unconditionally**. On an
+3. **Fetch** `uv run ews-storage plan ensure <plan>` — **unconditionally**. On an
    exact hit it verifies and fetches nothing; after a prefix restore it fetches
    only what differs; on a cold runner it fetches everything. The step's log
    ends with `plan-ensure took <n>s after a cache hit|miss`, and the same line
@@ -76,10 +76,10 @@ each skipped entirely when the input is empty:
    was not an exact hit — and before pytest, so a red test still leaves a warm
    cache for the next run.
 
-What the consuming repository must have: `ews-gcp-utils` among its
-dependencies (it provides `ews-gcp`, and the composite action's `uv sync` has
-already installed it); `gcp_default_key` in its `EWS_CREDENTIALS` (exported as
-`GCP_DEFAULT_KEY`, which is how `plan-ensure` authenticates); a committed lock
+What the consuming repository must have: `ews-cloud-storage` among its
+dependencies (it provides `ews-storage`, and the composite action's `uv sync`
+has already installed it); `gcp_default_key` in its `EWS_CREDENTIALS` (exported
+as `GCP_DEFAULT_KEY`, which is how `plan ensure` authenticates); a committed lock
 beside the plan, kept current by that package's own hook; and a dataset
 document that binds its data root to `EWS_DATA_ROOT` — a document bound to
 another variable lands its files outside the cached directory. Why the cache

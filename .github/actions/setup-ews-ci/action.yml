@@ -122,7 +122,7 @@ runs:
         fi
 
         # ============================================================
-        # 3. The data root for dataset documents and plans (ews-gcp-utils)
+        # 3. The data root for dataset documents and plans (ews-cloud-storage)
         #    and the dataset system cache (ews-datasets) - both inside the
         #    workspace, the one path a runner guarantees writable, and
         #    both exported to every later step of the job.

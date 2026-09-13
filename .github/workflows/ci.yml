@@ -59,7 +59,7 @@ on:
         required: false
         default: ""
       data-plan:
-        description: "Path of a data plan (config/plans/<name>.yaml) whose committed lock keys a cache of the data root; the test job restores it, runs 'ews-gcp plan-ensure', and saves on a miss. Empty: no data step. Needs ews-gcp-utils among the package's dependencies and a gcp_default_key in EWS_CREDENTIALS."
+        description: "Path of a data plan (config/plans/<name>.yaml) whose committed lock keys a cache of the data root; the test job restores it, runs 'ews-storage plan ensure', and saves on a miss. Empty: no data step. Needs ews-cloud-storage among the package's dependencies and a gcp_default_key in EWS_CREDENTIALS."
         type: string
         required: false
         default: ""
@@ -160,7 +160,7 @@ jobs:
           fi
           LOCK="${DATA_PLAN%.*}.lock.json"
           if [ ! -f "${LOCK}" ]; then
-            echo "::error::no lock beside the plan (expected ${LOCK}). Write and commit it: uv run ews-gcp plan-lock ${DATA_PLAN}"
+            echo "::error::no lock beside the plan (expected ${LOCK}). Write and commit it: uv run ews-storage plan lock ${DATA_PLAN}"
             exit 1
           fi
           KEY="ews-data-${RUNNER_OS}-$(sha256sum "${LOCK}" | cut -c1-16)"
@@ -187,7 +187,7 @@ jobs:
         run: |
           set -euo pipefail
           SECONDS=0
-          uv run ews-gcp plan-ensure "${DATA_PLAN}"
+          uv run ews-storage plan ensure "${DATA_PLAN}"
           if [ "${CACHE_HIT}" = "true" ]; then outcome="hit"; else outcome="miss"; fi
           echo "⏱️  plan-ensure took ${SECONDS}s after a cache ${outcome} on ${CACHE_KEY}"
           {
