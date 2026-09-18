@@ -42,8 +42,9 @@ comments** equally.
 ## What is fine, and must not be stripped
 
 - **Credential key names** — `gitlab_api_read_token`, `gitlab_api_token`,
-  `gitlab_package_registry_url`, `ammonit_or_password`,
-  `windcube_insights_password`, `EWS_CREDENTIALS`, `EWS_CREDENTIALS_KEYS`.
+  `gitlab_package_registry_url`, `gcp_default_key`, `ammonit_or_password`,
+  `windcube_insights_password`, `synologyc2_default_key_id`,
+  `synologyc2_default_secret_key`, `EWS_CREDENTIALS`, `EWS_CREDENTIALS_KEYS`.
   These are the action's public interface: a consumer cannot use it without
   them. Names yes, values never.
 - **The `EWS-Consulting-Private` links that are already here.** The docs point
