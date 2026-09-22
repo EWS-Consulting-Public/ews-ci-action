@@ -183,19 +183,35 @@ jobs:
         env:
           DATA_PLAN: ${{ inputs.data-plan }}
           CACHE_HIT: ${{ steps.data-cache.outputs.cache-hit }}
+          CACHE_MATCHED_KEY: ${{ steps.data-cache.outputs.cache-matched-key }}
           CACHE_KEY: ${{ steps.data-plan.outputs.key }}
         run: |
           set -euo pipefail
           SECONDS=0
           uv run ews-storage plan ensure "${DATA_PLAN}"
-          if [ "${CACHE_HIT}" = "true" ]; then outcome="hit"; else outcome="miss"; fi
-          echo "⏱️  plan-ensure took ${SECONDS}s after a cache ${outcome} on ${CACHE_KEY}"
+          # Three outcomes, not two: an exact key hit; a miss on the exact
+          # key that the restore-keys prefix still populated from an older
+          # cache (so a 0-object fetch only proves the digests still match,
+          # not that the store was reached); or nothing restored at all.
+          if [ "${CACHE_HIT}" = "true" ]; then
+            outcome_label="exact hit"
+            summary_key="${CACHE_KEY}"
+            echo "⏱️  plan-ensure took ${SECONDS}s after an exact cache hit on ${CACHE_KEY}"
+          elif [ -n "${CACHE_MATCHED_KEY}" ]; then
+            outcome_label="prefix restore (stale)"
+            summary_key="${CACHE_KEY} (restored \`${CACHE_MATCHED_KEY}\`)"
+            echo "⏱️  plan-ensure took ${SECONDS}s after a cache miss on ${CACHE_KEY}: restored ${CACHE_MATCHED_KEY} instead, an older cache under the restore-keys prefix, so the data root was already populated - a 0-object fetch only proves the digests still match, not that the store was reached"
+          else
+            outcome_label="cold"
+            summary_key="${CACHE_KEY}"
+            echo "⏱️  plan-ensure took ${SECONDS}s after a cache miss on ${CACHE_KEY}, nothing restored"
+          fi
           {
             echo "### Data plan ${DATA_PLAN}"
             echo ""
             echo "| cache | key | plan-ensure |"
             echo "| --- | --- | --- |"
-            echo "| ${outcome} | ${CACHE_KEY} | ${SECONDS} s |"
+            echo "| ${outcome_label} | ${summary_key} | ${SECONDS} s |"
           } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Save the data root to the cache

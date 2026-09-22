@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: ci.yml and release.yml - inputs, jobs, the data plan, and the conditions that gate them
-last-verified: 2026-09-05
+last-verified: 2026-09-22
 ---
 
 # The two reusable workflows
@@ -67,11 +67,24 @@ each skipped entirely when the input is empty:
 2. **Restore** `actions/cache/restore@v4` on the data root the composite
    action exported (`$GITHUB_WORKSPACE/.ews-data`), under that key, with
    `ews-data-<OS>-` as the prefix fallback.
-3. **Fetch** `uv run ews-storage plan ensure <plan>` — **unconditionally**. On an
+3. **Fetch** `uv run ews-storage plan ensure <plan>`, **unconditionally**. On an
    exact hit it verifies and fetches nothing; after a prefix restore it fetches
    only what differs; on a cold runner it fetches everything. The step's log
-   ends with `plan-ensure took <n>s after a cache hit|miss`, and the same line
-   goes to the job summary as a table.
+   ends with one of three lines, built from the restore step's `cache-hit` and
+   `cache-matched-key` outputs, and the same information goes to the job
+   summary as a table.
+   - Exact hit: `plan-ensure took <n>s after an exact cache hit on <key>`.
+   - Prefix restore: `cache-hit` was not `true`, but `cache-matched-key` named
+     an older key under the `ews-data-<OS>-` prefix, so the log reads
+     `plan-ensure took <n>s after a cache miss on <key>: restored <matched
+     key> instead, an older cache under the restore-keys prefix, so the data
+     root was already populated, and a 0-object fetch only proves the
+     digests still match, not that the store was reached`. This is the case
+     a plain hit or miss reading gets wrong: the exact key missed, but the
+     data root was not empty, and a run that fetched nothing did not prove
+     the object store was reachable.
+   - Cold: neither output was set, so `plan-ensure took <n>s after a cache
+     miss on <key>, nothing restored`.
 4. **Save** `actions/cache/save@v4` under the same key, only when the restore
    was not an exact hit — and before pytest, so a red test still leaves a warm
    cache for the next run.
