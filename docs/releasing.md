@@ -52,12 +52,19 @@ git push origin v2
 Force-pushing `v1` is deliberate and is the only place in this repository where
 that is correct.
 
-**Current state (2026-09-13):** `v1` was moved to `v1.1.0` on 2026-09-13 (the
-`data-plan:` step runs `ews-storage plan ensure` from `ews-cloud-storage`,
-replacing `ews-gcp plan-ensure` — Fabien's word given the same day); before
-that it sat on `33e94f6` (2026-09-05, the credential export and `data-plan:`
-change), and `v1.0` still marks `952e37c`. `v1.1.0` and the moved `v1` are
+**Current state (2026-09-22):** `v1` was moved to `v1.2.0` on 2026-09-22 (the
+data-plan step logs which of three things the cache did: an exact hit, a
+restore from the `restore-keys` prefix, or nothing restored). Before that it
+sat on `v1.1.0` from 2026-09-13 (the step moved to `ews-storage plan ensure`),
+and on `33e94f6` from 2026-09-05 (the credential export and `data-plan:`);
+`v1.0` still marks `952e37c`. `v1.1.0`, `v1.2.0` and the moved `v1` are
 annotated; the older tags are lightweight.
+
+`v1.2.0` was tested from one consuming repository before the tag moved, not
+the two this page asks for: a cold run logged `nothing restored` with four
+objects fetched, and the next logged `an exact cache hit` with none. The
+prefix-restore line was read, not run, because producing it needs a changed
+lock with an older cache still present.
 
 ## What counts as breaking
 
