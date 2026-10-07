@@ -38,7 +38,10 @@ rule cannot leave a stale copy loading forever.
 
 The two tools scope rules differently. **Cursor** reads `globs` /
 `alwaysApply` and loads a rule only when matching files are open. **Claude
-Code** loads every `.claude/rules/*.md` unconditionally, with no path scoping.
+Code** loads a `.claude/rules/*.md` file without frontmatter into every
+session, and one with `paths:` frontmatter only when it reads a matching file.
+The generator writes an always-on rule without frontmatter and turns a scoped
+rule's `globs` into `paths:`.
 So the trees cannot be byte-identical for rules, and a human mirroring them by
 hand drifts — in another EWS repository four rules that `AGENTS.md` called
 always-on ended up with no Claude counterpart at all.
@@ -47,7 +50,7 @@ That failure mode matters more here than in a private repository: the rule
 most likely to be lost to drift is `public-repo-boundary`, and losing it means
 a session writes internal detail into a world-readable repository.
 
-The generator emits the Cursor scope as an **Applies to** header, so a
+The generator also emits the Cursor scope as an **Applies to** header, so a
 path-scoped rule stays self-gating once loaded.
 
 ## Adding or renaming a rule
