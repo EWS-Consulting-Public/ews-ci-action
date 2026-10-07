@@ -1,0 +1,22 @@
+name: e2e self-test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/e2e.yml"
+      - ".github/workflows/e2e-selftest.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  selftest:
+    uses: ./.github/workflows/e2e.yml
+    with:
+      command: >-
+        test "$EWS_GCP__PROJECT" = "overlay-selftest" &&
+        test -z "${EWS_GCP__DEFAULT_KEY+set}" &&
+        echo "self-test: the passed overlay is set, the unpassed one is unset"
+    secrets:
+      EWS_GCP__PROJECT: ${{ 'overlay-selftest' }}

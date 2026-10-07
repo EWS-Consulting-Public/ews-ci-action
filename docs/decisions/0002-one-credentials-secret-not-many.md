@@ -7,7 +7,8 @@ last-verified: 2026-08-07
 # ADR 0002 — All credentials arrive as one JSON secret
 
 **Date:** recorded 2026-08-07 from `action.yml` and both workflows
-**Status:** accepted
+**Status:** accepted. The end-to-end workflow is amended by
+[ADR 0007](0007-e2e-workflow-the-consumer-triggers.md).
 
 ## Context
 
@@ -77,3 +78,5 @@ when its inputs are non-empty; none is required.
 - [../README.md](../README.md) § *Open questions* — the unread variable
 - [ADR 0001](0001-composite-action-not-javascript.md) — why the parsing is
   `jq` in bash
+- [ADR 0007](0007-e2e-workflow-the-consumer-triggers.md): the end-to-end
+  workflow takes secrets declared by name

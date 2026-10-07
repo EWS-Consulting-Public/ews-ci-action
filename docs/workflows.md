@@ -1,12 +1,14 @@
 ---
 status: as-built
-covers: ci.yml and release.yml - inputs, jobs, the data plan, and the conditions that gate them
-last-verified: 2026-09-22
+covers: ci.yml, release.yml and e2e.yml - inputs, jobs, the data plan, and the conditions that gate them
+last-verified: 2026-10-07
 ---
 
-# The two reusable workflows
+# The reusable workflows
 
-Both are `workflow_call`-only. Neither runs on a push to this repository.
+All three are `workflow_call`-only. None runs on a push to this repository,
+except that `e2e-selftest.yml` calls `e2e.yml` on this repository's own pull
+requests (§ *The self-test*).
 
 ## `ci.yml`
 
@@ -173,8 +175,77 @@ permissions:
 The wheel is **rebuilt** here, not downloaded from CI
 ([ADR 0005](decisions/0005-release-rebuilds-rather-than-downloading.md)).
 
+## `e2e.yml`
+
+Source: [`.github/workflows/e2e.yml`](../.github/workflows/e2e.yml). Copy-paste
+caller: [`examples/e2e.yml`](../examples/e2e.yml).
+
+One command, run on a checkout, with the declared secrets in its environment.
+The workflow has no trigger of its own: the consumer's caller owns the `on:`
+block, so the consumer decides when it runs. Why it is a separate workflow and
+why it declares secrets by name:
+[ADR 0007](decisions/0007-e2e-workflow-the-consumer-triggers.md).
+
+### Inputs
+
+| Input | Type | Default | Effect |
+| --- | --- | --- | --- |
+| `command` | string | **required** | The command to run. It reaches the shell through `env:` only |
+| `ref` | string | `""` | The git ref to check out. Empty is the ref that triggered the caller |
+| `python-version` | string | `"3.12"` | Python for the run |
+| `ews-credentials-keys` | string | `""` | Forwarded to the composite action, which validates the secret against it |
+
+### Secrets
+
+None is required.
+
+| Secret | Reaches |
+| --- | --- |
+| `EWS_CREDENTIALS` | The setup step. Without it the setup step installs nothing private |
+| `EWS_GCP__DEFAULT_KEY` | The `End-to-end` step only, as an environment overlay of the EWS configuration layer |
+| `EWS_GCP__PROJECT` | The `End-to-end` step only, as an environment overlay of the EWS configuration layer |
+
+### Steps
+
+The single `e2e` job runs on `ubuntu-latest`:
+
+1. Checkout at `ref`.
+2. `setup-ews-ci` with `install-dependencies: "false"`, as `release.yml` calls it.
+3. `End-to-end`, with no `if:` because the command is required. The command and
+   the two overlay secrets reach the step through `env:`. The step logs
+   `<NAME>: set` or `<NAME>: not passed` for each secret, unsets one that is
+   empty (an exported empty overlay would be read as a value, not as absent),
+   then runs `bash -euo pipefail -c "$E2E_COMMAND"`.
+
+The command is caller-controlled. Keep it in `env:` and never interpolate it
+into a `run:` block. The same holds for the commit message a caller tests in its
+`if:`: it is read in that expression and nowhere else.
+
+### The triggers
+
+[`examples/e2e.yml`](../examples/e2e.yml) shows three: a manual
+`workflow_dispatch`, a push to `main` whose commit message contains `[e2e]`, and
+the completion of the caller's release workflow. A caller keeps the ones it wants.
+The after-release line also tests that the run was for a `v` tag, because a
+release workflow without a `branches: ['v*']` filter runs after every CI run
+and only its job is skipped.
+
+GitHub limits a `workflow_run` chain to three levels. The after-release trigger
+is the third (CI, then the release, then this), and that path is not exercised
+here.
+
+### The self-test
+
+[`.github/workflows/e2e-selftest.yml`](../.github/workflows/e2e-selftest.yml)
+calls `e2e.yml` on this repository, on a manual dispatch and on a pull request
+that touches either file. It passes `EWS_GCP__PROJECT` as a literal dummy and
+leaves `EWS_GCP__DEFAULT_KEY` out. The command succeeds only if the first is set
+and the second is unset (`${VAR+set}` tells unset from empty). It needs no
+repository secret.
+
 ## Not verified
 
 Job ordering, conditions and commands are read from the YAML. The data plan
 steps were first observed on a runner on 2026-09-05 in a purpose-built
-consuming repository; `release.yml` has not been observed here.
+consuming repository; `release.yml` has not been observed here, and neither has `e2e.yml`,
+including its self-test, which runs only once pushed.

@@ -4,7 +4,7 @@ Reusable GitHub Actions CI/CD for Python packages built with
 [uv](https://github.com/astral-sh/uv) and published to a private GitLab
 package registry.
 
-One composite action and two reusable workflows. A consuming repository
+One composite action and three reusable workflows. A consuming repository
 replaces its lint/test/build/publish YAML with a handful of lines.
 
 ```yaml
@@ -36,9 +36,10 @@ coverage, and a wheel build that runs only after both pass.
 | [`.github/actions/setup-ews-ci`](.github/actions/setup-ews-ci/action.yml) | Composite action: installs uv + Python, exports every `EWS_CREDENTIALS` key and the data root to the job, writes registry auth onto the runner, optionally `uv sync` |
 | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | Reusable workflow: `check-skip` → `lint` → `test` (matrix, with an optional cached dataset plan) → `build` |
 | [`.github/workflows/release.yml`](.github/workflows/release.yml) | Reusable workflow: on a green tagged CI run, build, publish to the registry, create a GitHub release |
+| [`.github/workflows/e2e.yml`](.github/workflows/e2e.yml) | Reusable workflow: run one command with optional overlay secrets; the caller chooses the trigger |
 | [`examples/`](examples/) | Copy-paste caller workflows |
 
-Both workflows are `workflow_call`-only. They do not run on this repository's
+All three workflows are `workflow_call`-only. They do not run on this repository's
 own pushes.
 
 ## Requirements for a consuming repository
@@ -76,7 +77,7 @@ Start at [docs/README.md](docs/README.md).
 | --- | --- |
 | [docs/adopting.md](docs/adopting.md) | How do I put this in my repository? |
 | [docs/action-reference.md](docs/action-reference.md) | What does the composite action do to the runner? |
-| [docs/workflows.md](docs/workflows.md) | Every input of `ci.yml` and `release.yml` |
+| [docs/workflows.md](docs/workflows.md) | Every input of `ci.yml`, `release.yml` and `e2e.yml` |
 | [docs/credentials.md](docs/credentials.md) | What goes in `EWS_CREDENTIALS`, and what is written where |
 | [docs/releasing.md](docs/releasing.md) | Changing and tagging this repository |
 | [docs/decisions/](docs/decisions/) | Why it is built this way |

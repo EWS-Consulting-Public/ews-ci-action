@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the EWS_CREDENTIALS secret - its keys, the variable each one becomes on the runner, and which file some of them also land in
-last-verified: 2026-09-05
+last-verified: 2026-10-07
 ---
 
 # `EWS_CREDENTIALS`
@@ -83,6 +83,28 @@ fails if the secret lacks any key the array names. Since the same command
 writes both, a failure there means one was updated without the other — re-run
 the command.
 
+## Overlay-named secrets
+
+`e2e.yml` also accepts two optional repository secrets, `EWS_GCP__DEFAULT_KEY`
+and `EWS_GCP__PROJECT`. They are environment overlays of the EWS configuration
+layer: the name is `EWS_<SECTION>__<FIELD>`, and the layer reads it ahead of any
+file or flat name, so a library needs no code of its own to find them.
+
+- **They are separate repository secrets, never keys of `EWS_CREDENTIALS`.** A
+  key in that object reaches every consuming repository; these belong to one.
+- **Only the end-to-end workflow's command step sees them.** No other step, no
+  `ci.yml` job and no `release.yml` step receives them, and the action does not
+  write them to `$GITHUB_ENV`.
+- **A secret the caller did not pass is unset**, not exported empty, and the
+  step logs `<NAME>: not passed`. The configuration layer reads an exported empty
+  overlay as a value, which would blank the credential supplied under the flat
+  name.
+- The caller forwards each by name, as
+  [`examples/e2e.yml`](../examples/e2e.yml) does.
+
+Why: [ADR 0007](decisions/0007-e2e-workflow-the-consumer-triggers.md).
+Caller: [`examples/e2e.yml`](../examples/e2e.yml).
+
 ## Rules for this repository
 
 - **A credential value never appears in this repository.** Key names are the
@@ -113,7 +135,8 @@ secrets:
   EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
 ```
 
-or `secrets: inherit`.
+or `secrets: inherit`, which GitHub honours only when the calling workflow is
+in the same organization or enterprise as this action.
 
 **The setup step fails with `EWS_CREDENTIALS is not a JSON object`.** The
 secret's value is not the payload the tooling writes — re-run the command in
