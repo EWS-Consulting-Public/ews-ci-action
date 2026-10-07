@@ -1,0 +1,73 @@
+name: End-to-end
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: "The command to run, with the declared overlay secrets in its environment"
+        type: string
+        required: true
+      ref:
+        description: "The git ref to check out; empty for the ref that triggered the caller"
+        type: string
+        required: false
+        default: ""
+      python-version:
+        description: Python version for the run
+        type: string
+        required: false
+        default: "3.12"
+      ews-credentials-keys:
+        description: "Repository variable EWS_CREDENTIALS_KEYS - JSON array of the keys EWS_CREDENTIALS must carry; setup fails naming any that are missing (optional)"
+        type: string
+        required: false
+        default: ""
+    secrets:
+      EWS_CREDENTIALS:
+        description: "Repository secret - JSON object with all EWS credentials; without it the setup step installs nothing private"
+        required: false
+      EWS_GCP__DEFAULT_KEY:
+        description: "Repository secret - environment overlay of the EWS configuration layer (service-account key); passed only to the command's step"
+        required: false
+      EWS_GCP__PROJECT:
+        description: "Repository secret - environment overlay of the EWS configuration layer (project id); passed only to the command's step"
+        required: false
+
+# The caller owns the trigger. This workflow has no `on:` of its own beyond
+# workflow_call, so the consumer decides when an end-to-end run happens.
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
+        with:
+          python-version: ${{ inputs.python-version }}
+          install-dependencies: "false"
+          ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
+          ews-credentials-keys: ${{ inputs.ews-credentials-keys }}
+
+      - name: End-to-end
+        shell: bash
+        env:
+          E2E_COMMAND: ${{ inputs.command }}
+          EWS_GCP__DEFAULT_KEY: ${{ secrets.EWS_GCP__DEFAULT_KEY }}
+          EWS_GCP__PROJECT: ${{ secrets.EWS_GCP__PROJECT }}
+        run: |
+          # An unpassed secret expands to "". The EWS configuration layer reads
+          # an exported empty overlay as a value and would blank the key the
+          # shared credentials supply, so unset it instead.
+          for name in EWS_GCP__DEFAULT_KEY EWS_GCP__PROJECT; do
+            if [ -n "${!name}" ]; then
+              echo "${name}: set"
+            else
+              echo "${name}: not passed"
+              unset "${name}"
+            fi
+          done
+          bash -euo pipefail -c "$E2E_COMMAND"

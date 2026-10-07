@@ -18,21 +18,10 @@ on:
         type: string
         required: false
         default: ""
-      e2e-command:
-        description: "The command this repository runs after the release is published, with the declared overlay secrets in its environment; empty skips the step"
-        type: string
-        required: false
-        default: ""
     secrets:
       EWS_CREDENTIALS:
         description: "Repository secret - JSON object with all EWS credentials"
         required: true
-      EWS_GCP__DEFAULT_KEY:
-        description: "Repository secret - environment overlay of the EWS configuration layer (service-account key); passed only to the end-to-end step"
-        required: false
-      EWS_GCP__PROJECT:
-        description: "Repository secret - environment overlay of the EWS configuration layer (project id); passed only to the end-to-end step"
-        required: false
 
 # Note: Caller workflow must set 'permissions: contents: write' or 'permissions: inherit'
 # to allow GitHub release creation
@@ -114,24 +103,3 @@ jobs:
           echo "# Install package" >> $GITHUB_STEP_SUMMARY
           echo "uv pip install $PACKAGE_NAME" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
-
-      - name: End-to-end
-        if: ${{ inputs.e2e-command != '' }}
-        shell: bash
-        env:
-          E2E_COMMAND: ${{ inputs.e2e-command }}
-          EWS_GCP__DEFAULT_KEY: ${{ secrets.EWS_GCP__DEFAULT_KEY }}
-          EWS_GCP__PROJECT: ${{ secrets.EWS_GCP__PROJECT }}
-        run: |
-          # An unpassed secret expands to "". The EWS configuration layer reads
-          # an exported empty overlay as a value and would blank the key the
-          # shared credentials supply, so unset it instead.
-          for name in EWS_GCP__DEFAULT_KEY EWS_GCP__PROJECT; do
-            if [ -n "${!name}" ]; then
-              echo "${name}: set"
-            else
-              echo "${name}: not passed"
-              unset "${name}"
-            fi
-          done
-          bash -euo pipefail -c "$E2E_COMMAND"
