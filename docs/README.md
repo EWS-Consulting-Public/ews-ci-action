@@ -130,10 +130,12 @@ keys), and `EWS_DATASETS_SYSTEM_CACHE_PATH` now reaches `$GITHUB_ENV`
 
 ## Not verified
 
-- **`release.yml` has not been observed running** while writing these docs.
-  The composite action's credential block was exercised locally, and the
-  `ci.yml` data plan steps on a runner, on 2026-09-05 — the pages say where.
-  No publish was run.
+- **`release.yml` was not run from this repository.** On 2026-10-07 a
+  consuming repository's run history showed it behind a caller with
+  `branches: ['v*']`: one release run per green tag CI run, each release job
+  green, and none for a branch or pull-request CI run. The composite action's
+  credential block was exercised locally, and the `ci.yml` data plan steps on
+  a runner, on 2026-09-05; the pages say where.
 - The consuming side — which repositories call these workflows, and whether
   their `nox -s build` / `nox -s publish` sessions exist — was not surveyed.
 - `astral-sh/setup-uv@v7`, `codecov/codecov-action@v4`,

@@ -1,4 +1,10 @@
 # Release Workflow - Basic Package
+#
+# docs/adopting.md § 2 is the recommended caller. It keeps this file's
+# `branches: ['v*']` filter, forwards EWS_CREDENTIALS by name, since GitHub
+# honours `secrets: inherit` only from the same organization or enterprise as
+# this action, and sets `contents: write` and `actions: read`, which this file
+# does not.
 
 name: Release to GitLab
 

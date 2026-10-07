@@ -85,6 +85,7 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
+    branches: ["v*"]
 
 permissions:
   contents: write
@@ -97,16 +98,18 @@ jobs:
       EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
 ```
 
-Three things here are load-bearing and are the usual cause of "the release
+Two things here are load-bearing and are the usual cause of "the release
 never runs":
 
 - `workflows: ["CI"]` matches the CI workflow's **`name:` field**, not its
   filename.
-- The `permissions` block is **required** — the reusable workflow does not
+- The `permissions` block is **required**: the reusable workflow does not
   request permissions on the caller's behalf.
-- **Do not add a `branches:` filter** to the `workflow_run` trigger. Tag runs
-  are not branch runs; the reusable workflow already tests `head_branch` for
-  the `v` prefix.
+
+**Keep `branches: ["v*"]`.** GitHub matches it against the triggering CI run's
+`head_branch`, the tag name on a tag run, so the release workflow starts only
+for tags. Without it every branch and pull-request CI run also starts a release
+run whose job is skipped.
 
 ## 4. Remove what is now duplicated
 
@@ -143,7 +146,7 @@ carries the wheel and `uv.lock`.
 | --- | --- |
 | `⚠️ No EWS_CREDENTIALS provided` although the secret is set | The caller did not forward it — reusable workflows do not inherit secrets. Add the `secrets:` block, or `secrets: inherit`. Same message if the secret's value is not valid JSON, because every `jq` extraction then yields empty |
 | `401` / unresolvable dependency in `uv sync` | `gitlab_api_read_token` and `gitlab_package_registry_url` must **both** be in the JSON; the action needs the pair and skips the registry silently if either is absent |
-| Release job never starts | CI did not run on the tag, CI was not green, `workflows:` does not match the CI workflow's `name:`, or a `branches:` filter was added to `workflow_run` |
+| Release job never starts | CI did not run on the tag, CI was not green, `workflows:` does not match the CI workflow's `name:`, or the tag does not start with `v` |
 | Release fails at "Build package" | No `nox -s build` session. `release.yml` calls it unconditionally, regardless of `use-nox-build` |
 
 ## Do not
