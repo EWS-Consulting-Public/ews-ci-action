@@ -76,6 +76,7 @@ Reading order for someone new: this file, then `adopting.md`, then
 | [0004](decisions/0004-v1-is-a-moving-major-tag.md) | `v1` is force-moved to the newest `v1.x`; consumers track a major version, not a commit |
 | [0005](decisions/0005-release-rebuilds-rather-than-downloading.md) | `release.yml` rebuilds the wheel instead of downloading CI's artifact |
 | [0006](decisions/0006-data-plan-caches-the-data-root-on-the-plan-lock.md) | `data-plan:` caches the whole data root keyed on the plan's committed lock, and `plan-ensure` always runs |
+| [0007](decisions/0007-release-e2e-takes-overlay-named-secrets.md) | The release workflow's end-to-end step takes overlay-named secrets declared beside `EWS_CREDENTIALS`, and unsets one that was not passed |
 
 ## Not carried forward from the pre-2026-08-07 docs
 

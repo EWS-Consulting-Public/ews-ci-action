@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: ci.yml and release.yml - inputs, jobs, the data plan, and the conditions that gate them
-last-verified: 2026-09-22
+last-verified: 2026-10-07
 ---
 
 # The two reusable workflows
@@ -130,8 +130,19 @@ Source: [`.github/workflows/release.yml`](../.github/workflows/release.yml).
 | `python-version` | string | `"3.12"` | Python for the build |
 | `use-nox-publish` | boolean | `true` | `uvx nox -s publish` instead of an inline `twine upload` |
 | `ews-credentials-keys` | string | `""` | Forwarded to the composite action, which validates the secret against it |
+| `e2e-command` | string | `""` | The command run by the last step, `End-to-end`, after the release is published. Empty skips the step |
 
-Secret: `EWS_CREDENTIALS`, **required**.
+Secrets:
+
+| Secret | Required | Reaches |
+| --- | --- | --- |
+| `EWS_CREDENTIALS` | **yes** | The setup step and the inline `twine` publish |
+| `EWS_GCP__DEFAULT_KEY` | no | The `End-to-end` step only |
+| `EWS_GCP__PROJECT` | no | The `End-to-end` step only |
+
+The last two are environment overlays of the EWS configuration layer, declared
+by name so a caller can pass them. Why they are not keys of `EWS_CREDENTIALS`:
+[ADR 0007](decisions/0007-release-e2e-takes-overlay-named-secrets.md).
 
 ### The trigger condition
 
@@ -169,6 +180,13 @@ permissions:
    package name scraped out of `pyproject.toml` by `grep`/`sed` — this assumes
    a top-level `name = "..."` line and will pick up the first match, so a
    `[project]` name must appear before any other `name = ` key.
+8. `End-to-end`, only when `e2e-command` is non-empty. The command and the two
+   overlay secrets reach the step through `env:`. The step logs
+   `<NAME>: set` or `<NAME>: not passed` for each secret, unsets one that is
+   empty (an exported empty overlay would be read as a value, not as absent),
+   then runs `bash -euo pipefail -c "$E2E_COMMAND"`. It runs after the release
+   is published, so a failure turns the run red without undoing the release
+   ([ADR 0007](decisions/0007-release-e2e-takes-overlay-named-secrets.md)).
 
 The wheel is **rebuilt** here, not downloaded from CI
 ([ADR 0005](decisions/0005-release-rebuilds-rather-than-downloading.md)).
