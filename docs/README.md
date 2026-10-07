@@ -121,14 +121,6 @@ Recorded rather than answered, because nothing in the YAML settles them.
 - **The `~/.config/ews/` flat copy is labelled "for old tests"**
   with no reference to which tests or which package. Whether anything still
   reads the flat location is unknown.
-- **The after-release trigger in `examples/e2e.yml` never sees a tag.** A
-  release workflow started by `workflow_run` runs on the default branch, so
-  the completed release run's `head_branch` names that branch, not the tag.
-  The example's `startsWith(github.event.workflow_run.head_branch, 'v')` is
-  then false for every release, and its `ref:` would check out the default
-  branch. Seen in a consuming repository's release runs on 2026-10-07; the
-  after-release path itself was not run. Fixing it means choosing what an
-  after-release run checks out, which changes the shipped example.
 
 Two earlier entries closed on 2026-09-05: `ews-credentials-keys` is now read
 (the setup step validates the secret against it and fails naming missing

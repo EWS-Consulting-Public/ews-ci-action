@@ -129,15 +129,21 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
 jobs:
   e2e:
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'push' && contains(github.event.head_commit.message, '[e2e]'))
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[e2e]')) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+        startsWith(github.event.workflow_run.head_branch, 'v'))
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/e2e.yml@v1
     with:
       command: uv run <your-cli> <your-end-to-end-command>
+      ref: ${{ github.event.workflow_run.head_branch }}
     secrets:
       EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
       EWS_GCP__DEFAULT_KEY: ${{ secrets.EWS_GCP__DEFAULT_KEY }}
@@ -155,9 +161,10 @@ jobs:
 - **Nothing is installed before the command.** A `uv run` inside it syncs the
   project.
 - The commit message is read in `if:` only, never in a shell.
-- `examples/e2e.yml` in `ews-ci-action` also shows an after-release trigger. It
-  does not fire as written (`docs/README.md` § *Open questions* there); leave
-  it out.
+- **Keep the triggers the package wants, drop the rest.** The release line
+  keys on a green CI run on a `v` tag, like the release workflow, and runs
+  beside it from the tag. Never key it on the release workflow: that run is on
+  the default branch, so its `head_branch` is never the tag.
 
 ## 5. Remove what is now duplicated
 

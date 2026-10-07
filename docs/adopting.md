@@ -103,32 +103,19 @@ tag's run is the one that matters.
 `basic-package.yml`, `matrix-testing.yml`, `release-basic.yml`,
 `dataset-plan.yml` for a package whose tests read a dataset from the bucket
 (§ *Customising* below), and `e2e.yml` for a package that runs one end-to-end
-command when its owner chooses: on a manual dispatch or on a commit marked
-`[e2e]` (inputs and secrets: [workflows.md](workflows.md) § `e2e.yml`). Its
-after-release line does not fire as written ([README.md](README.md) § *Open
-questions*). Its caller passes the one required input, `command`, and forwards
+command when its owner chooses: on a manual dispatch, on a commit marked
+`[e2e]`, or with each release, beside the release job (inputs, secrets and
+triggers: [workflows.md](workflows.md) § `e2e.yml`). Its caller passes the one
+required input, `command`, and forwards
 each secret it uses by name: `EWS_CREDENTIALS`, `EWS_GCP__DEFAULT_KEY`,
 `EWS_GCP__PROJECT`, all optional. Never `secrets: inherit` there.
 
-`basic-package.yml` and `release-basic.yml` use `secrets: inherit`, which
-passes every secret the caller repository has, and which GitHub honours only
-when the caller is in the same organization or enterprise as this action.
-Name `EWS_CREDENTIALS` explicitly, as above. `matrix-testing.yml` passes no
-secrets at all: it only works for a package with no private dependencies.
-
-Two of them are behind this page. Copy the snippets above rather than the files:
-
-- **`release-basic.yml` uses `secrets: inherit` and sets no `permissions`.** Its
-  `branches: ['v*']` filter is the one § 2 recommends. Forward
-  `EWS_CREDENTIALS` by name and add the `permissions` block if you copy that
-  file.
-- **`basic-package.yml` comments a step "Upload to Codecov" while setting only
-  `run-coverage: true`.** `upload-coverage` defaults to `false`, so coverage is
-  collected and never uploaded. Set `upload-coverage: true` if you meant to
-  upload.
-
-The example files' YAML is left as it is on purpose: `examples/` is shipped
-product, and a documentation change edits only its comments.
+Every example forwards `EWS_CREDENTIALS` by name, never `secrets: inherit`,
+which GitHub honours only when the caller is in the same organization or
+enterprise as this action. `matrix-testing.yml` passes no secrets at all: it
+only works for a package with no private dependencies. `basic-package.yml`
+sets `run-coverage: true` only; `upload-coverage` defaults to `false`, so set
+it too if the coverage should reach Codecov.
 
 ## Customising
 

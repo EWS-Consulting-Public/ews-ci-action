@@ -1,10 +1,8 @@
 # Release Workflow - Basic Package
 #
-# docs/adopting.md § 2 is the recommended caller. It keeps this file's
-# `branches: ['v*']` filter, forwards EWS_CREDENTIALS by name, since GitHub
-# honours `secrets: inherit` only from the same organization or enterprise as
-# this action, and sets `contents: write` and `actions: read`, which this file
-# does not.
+# The caller docs/adopting.md § 2 recommends. EWS_CREDENTIALS is forwarded by
+# name: GitHub honours `secrets: inherit` only from the same organization or
+# enterprise as this action.
 
 name: Release to GitLab
 
@@ -15,10 +13,15 @@ on:
     branches:
       - 'v*'
 
+permissions:
+  contents: write # create the GitHub release
+  actions: read # read the triggering workflow run
+
 jobs:
   release:
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/release.yml@v1
     with:
       python-version: "3.12"
       use-nox-publish: true  # Use nox for publishing
-    secrets: inherit
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}

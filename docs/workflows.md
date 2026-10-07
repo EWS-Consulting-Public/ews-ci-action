@@ -237,17 +237,15 @@ into a `run:` block. The same holds for the commit message a caller tests in its
 
 [`examples/e2e.yml`](../examples/e2e.yml) shows three: a manual
 `workflow_dispatch`, a push to `main` whose commit message contains `[e2e]`, and
-the completion of the caller's release workflow. A caller keeps the ones it wants.
+a release: a green CI run on a `v` tag, the event `release.yml` keys on. A
+caller keeps the ones it wants.
 
-The after-release line does not fire as written. It tests the completed
-release run's `head_branch` for a `v` prefix, and a release run started by
-`workflow_run` reports the default branch there, not the tag; its `ref:` would
-be the default branch too. Recorded in [README.md](README.md) § *Open
-questions*.
-
-GitHub limits a `workflow_run` chain to three levels. The after-release trigger
-is the third (CI, then the release, then this), and that path is not exercised
-here.
+The release line runs beside the release job, from the tag's checkout, and
+passes the tag as `ref`. It does not wait for the wheel to be published. It
+must not key on the release workflow instead: a run started by `workflow_run`
+runs on the default branch, so the completed release run's `head_branch` names
+that branch, never the tag (seen in a consuming repository's release runs on
+2026-10-07).
 
 ### The self-test
 
@@ -265,4 +263,4 @@ steps were first observed on a runner on 2026-09-05 in a purpose-built
 consuming repository. `release.yml` was observed only in a consuming
 repository's run history ([README.md](README.md) § *Not verified*).
 `e2e-selftest.yml` ran green on this repository's pull request on 2026-10-07;
-the after-release trigger and a real end-to-end command were not run.
+the release trigger and a real end-to-end command were not run.

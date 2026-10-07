@@ -16,6 +16,7 @@ jobs:
     with:
       python-versions: '["3.12", "3.13"]'  # Matrix testing
       lint-python-version: "3.12"
-      run-coverage: true  # Upload to Codecov
+      run-coverage: true  # Collect coverage; add upload-coverage: true to send it to Codecov
       use-nox-build: true  # Use nox for build
-    secrets: inherit
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
