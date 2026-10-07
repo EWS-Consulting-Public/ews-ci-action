@@ -66,6 +66,8 @@ Check `docs/README.md` § *Open questions* before "fixing" any of these:
 - `check-skip` reads `github.event.head_commit.message`, empty on
   `pull_request`.
 - The `~/.config/ews/` flat copy exists "for old tests" that are not named.
+- The after-release trigger in `examples/e2e.yml` tests the release run's
+  `head_branch`, which is the default branch, never the tag.
 
 They are real, they are written down, and changing any of them ships to every
 consumer at once. Propose before acting.

@@ -2,10 +2,9 @@
 #
 # Delete the triggers you do not want, and the matching line of the job's `if:`.
 # The commit message is read only inside `if:`, never in a shell. A commit that
-# also carries `[skip ci]` starts nothing. A release workflow without a
-# `branches: ['v*']` filter runs after every CI run, so the after-release line
-# also checks that the run was for a `v` tag. `ref` is empty except after a
-# release, where it is the release tag.
+# also carries `[skip ci]` starts nothing. The after-release line does not fire
+# as written: a release run started by `workflow_run` reports the default
+# branch as its `head_branch`, not the tag (docs/README.md § Open questions).
 
 name: End-to-end
 

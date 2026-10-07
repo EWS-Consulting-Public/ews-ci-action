@@ -103,9 +103,10 @@ tag's run is the one that matters.
 `basic-package.yml`, `matrix-testing.yml`, `release-basic.yml`,
 `dataset-plan.yml` for a package whose tests read a dataset from the bucket
 (§ *Customising* below), and `e2e.yml` for a package that runs one end-to-end
-command when its owner chooses: on a manual dispatch, on a commit marked
-`[e2e]`, or after a release (inputs and secrets: [workflows.md](workflows.md)
-§ `e2e.yml`).
+command when its owner chooses: on a manual dispatch or on a commit marked
+`[e2e]` (inputs and secrets: [workflows.md](workflows.md) § `e2e.yml`). Its
+after-release line does not fire as written ([README.md](README.md) § *Open
+questions*).
 
 `basic-package.yml` and `release-basic.yml` use `secrets: inherit`, which
 passes every secret the caller repository has, and which GitHub honours only
