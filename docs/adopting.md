@@ -136,9 +136,11 @@ with:
 ```
 
 `data-plan` needs three things of the package: `ews-cloud-storage` among its
-dependencies, a committed lock beside the plan, and `gcp_default_key` in its
-`EWS_CREDENTIALS`. What the job then does, and why the cache is shaped that
-way: [workflows.md](workflows.md) § *The data plan*.
+dependencies, a committed lock beside the plan, and in its `EWS_CREDENTIALS`
+the keys of the dataset's store: `gcp_default_key` for `gs://`,
+`synologyc2_default_key_id` and `synologyc2_default_secret_key` for `s3://`.
+What the job then does, and why the cache is shaped that way:
+[workflows.md](workflows.md) § *The data plan*.
 
 Full input tables: [workflows.md](workflows.md).
 

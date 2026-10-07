@@ -93,13 +93,21 @@ each skipped entirely when the input is empty:
 
 What the consuming repository must have: `ews-cloud-storage` among its
 dependencies (it provides `ews-storage`, and the composite action's `uv sync`
-has already installed it); `gcp_default_key` in its `EWS_CREDENTIALS` (exported
-as `GCP_DEFAULT_KEY`, which is how `plan ensure` authenticates); a committed lock
+has already installed it); in its `EWS_CREDENTIALS`, the keys of the store the
+dataset document points at, by its scheme (table below); a committed lock
 beside the plan, kept current by that package's own hook; and a dataset
-document that binds its data root to `EWS_DATA_ROOT` — a document bound to
+document that binds its data root to `EWS_DATA_ROOT`: a document bound to
 another variable lands its files outside the cached directory. Why the cache
 is the whole data root and the key is the plan's lock:
 [ADR 0006](decisions/0006-data-plan-caches-the-data-root-on-the-plan-lock.md).
+
+| Dataset store | Keys in `EWS_CREDENTIALS` | Exported as, and read by `plan ensure` |
+| --- | --- | --- |
+| `gs://`, Google Cloud Storage | `gcp_default_key` | `GCP_DEFAULT_KEY` |
+| `s3://`, the S3-compatible store | `synologyc2_default_key_id`, `synologyc2_default_secret_key` | `SYNOLOGYC2_DEFAULT_KEY_ID`, `SYNOLOGYC2_DEFAULT_SECRET_KEY` |
+
+The composite action does not know the scheme. It exports every key the secret
+carries, so a plan on either store needs nothing here beyond `data-plan`.
 
 The lint and build jobs do not run the data steps; only tests read data.
 
