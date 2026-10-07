@@ -75,12 +75,12 @@ lock with an older cache still present.
 
 ## What counts as breaking
 
-The public surface is the inputs of the two workflows and the composite action,
-plus what a consumer must have on disk.
+The public surface is the inputs and declared secrets of the three workflows,
+the inputs of the composite action, and what a consumer must have on disk.
 
 Breaking:
 
-- Removing or renaming an input.
+- Removing or renaming an input or a declared secret.
 - Changing a default in a way that changes behaviour for a caller that did not
   set it.
 - Requiring something new of the consuming repository — a new nox session, a

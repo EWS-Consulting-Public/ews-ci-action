@@ -1,12 +1,13 @@
 ---
 name: adopt-ews-ci
-description: Put the ews-ci-action reusable workflows into a Python package repository, or fix one whose CI is failing after adopting them - "add this action to my repo's CI", "wire up CI for this package", "migrate this repo to ews-ci-action", "why is CI failing with 401 / no EWS_CREDENTIALS", "the release workflow never runs". Covers the prerequisite check, both caller workflows, the permissions and secrets that reusable workflows do NOT inherit, and the four failure modes that look like something else.
+description: Put the ews-ci-action reusable workflows into a Python package repository, or fix one whose CI is failing after adopting them - "add this action to my repo's CI", "wire up CI for this package", "migrate this repo to ews-ci-action", "why is CI failing with 401 / no EWS_CREDENTIALS", "the release workflow never runs", "add an end-to-end run", "call e2e.yml". Covers the prerequisite check, the CI, release and end-to-end (e2e.yml) caller workflows, the permissions and secrets that reusable workflows do NOT inherit, and the failure modes that look like something else.
 ---
 
 # Adopting `ews-ci-action` in a package repository
 
 This procedure runs **in the consuming repository**, not in `ews-ci-action`.
-It writes two workflow files there and changes nothing here.
+It writes two workflow files there, three with the end-to-end caller, and
+changes nothing here.
 
 ## Locked conventions — do not re-open
 
@@ -14,7 +15,9 @@ It writes two workflow files there and changes nothing here.
   change to the action itself. `v1` is force-moved forward on purpose
   (ADR 0004).
 - **Credentials are one secret**, `EWS_CREDENTIALS`, a JSON object. Do not
-  create per-credential secrets (ADR 0002).
+  create per-credential secrets (ADR 0002). The one exception is the
+  end-to-end overlays `e2e.yml` declares by name, which belong to one
+  repository (ADR 0007).
 - **Runners are `ubuntu-latest`.** The composite action is `shell: bash` with
   POSIX paths; there is no OS matrix and adding one is not a small change.
 - Docs for every input: `docs/workflows.md` in `ews-ci-action`.
@@ -111,13 +114,58 @@ never runs":
 for tags. Without it every branch and pull-request CI run also starts a release
 run whose job is skipped.
 
-## 4. Remove what is now duplicated
+## 4. Write the end-to-end caller
+
+Skip this step unless the package proves one real run end to end. `e2e.yml`
+runs one command the caller supplies and has no trigger of its own: the
+caller's `on:` block decides when it runs.
+
+`.github/workflows/e2e.yml`:
+
+```yaml
+name: End-to-end
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  e2e:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && contains(github.event.head_commit.message, '[e2e]'))
+    uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/e2e.yml@v1
+    with:
+      command: uv run <your-cli> <your-end-to-end-command>
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
+      EWS_GCP__DEFAULT_KEY: ${{ secrets.EWS_GCP__DEFAULT_KEY }}
+      EWS_GCP__PROJECT: ${{ secrets.EWS_GCP__PROJECT }}
+```
+
+- **`command` is the one required input.** It reaches the shell through
+  `env:`. Never build it from a commit message, branch name or PR title.
+- **Forward each secret by name**, never `secrets: inherit`, which GitHub
+  honours only from the same organization or enterprise as this action. All
+  three are optional; drop the lines the command does not need.
+- **The two `EWS_GCP__*` overlays are repository secrets of this repository**,
+  never keys of `EWS_CREDENTIALS`. Only the command's step sees them, and one
+  the caller did not pass is unset, not exported empty.
+- **Nothing is installed before the command.** A `uv run` inside it syncs the
+  project.
+- The commit message is read in `if:` only, never in a shell.
+- `examples/e2e.yml` in `ews-ci-action` also shows an after-release trigger. It
+  does not fire as written (`docs/README.md` § *Open questions* there); leave
+  it out.
+
+## 5. Remove what is now duplicated
 
 Delete the lint / test / build / publish jobs the two callers replace. Keep any
 job that does something these workflows do not — docs builds, notebook checks,
 deployment. Chain it with `needs: ci`.
 
-## 5. Verify
+## 6. Verify
 
 ```bash
 git add .github/workflows/ && git commit -m "ci: use ews-ci-action" && git push
@@ -140,7 +188,17 @@ dependency will fail to resolve.
 Then test the release path with a real tag, and check that the GitHub release
 carries the wheel and `uv.lock`.
 
-## The four failure modes
+For the end-to-end caller, start it once by hand and read its log:
+
+```bash
+gh workflow run e2e.yml --repo <owner>/<name>
+gh run list --repo <owner>/<name> --workflow e2e.yml --limit 1
+```
+
+The `End-to-end` step logs `<NAME>: set` for each overlay forwarded and
+`<NAME>: not passed` for each one left out, then runs the command.
+
+## The failure modes
 
 | Symptom | Cause |
 | --- | --- |
@@ -148,6 +206,8 @@ carries the wheel and `uv.lock`.
 | `401` / unresolvable dependency in `uv sync` | `gitlab_api_read_token` and `gitlab_package_registry_url` must **both** be in the JSON; the action needs the pair and skips the registry silently if either is absent |
 | Release job never starts | CI did not run on the tag, CI was not green, `workflows:` does not match the CI workflow's `name:`, or the tag does not start with `v` |
 | Release fails at "Build package" | No `nox -s build` session. `release.yml` calls it unconditionally, regardless of `use-nox-build` |
+| `EWS_GCP__…: not passed` although the secret is set | The end-to-end caller did not forward it by name in its `secrets:` block |
+| The end-to-end caller cannot find `e2e.yml@v1` | `v1` points at a release older than `e2e.yml`; `git ls-remote --tags https://github.com/EWS-Consulting-Public/ews-ci-action` shows where. Moving `v1` is Fabien's call; do not pin a branch to work around it |
 
 ## Do not
 
@@ -157,7 +217,7 @@ carries the wheel and `uv.lock`.
 - **Do not pin to a branch or a SHA** in a normal adoption. `@v1` is the
   contract.
 - **Do not add credentials as separate repository secrets.** One JSON secret
-  (ADR 0002).
+  (ADR 0002); the `e2e.yml` overlays are the declared exception (ADR 0007).
 - **Do not copy a credential value** into a workflow file, a commit message or
   an issue — and never into `ews-ci-action`, which is public.
 - **Do not paste internal hostnames, registry URLs or paths** into anything

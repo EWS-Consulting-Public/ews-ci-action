@@ -5,9 +5,9 @@
 
 # ews-ci-action — the boundary
 
-One composite action and two `workflow_call` workflows for uv-based Python
-packages that publish to a private GitLab package registry. That is the whole
-job.
+One composite action and three `workflow_call` workflows (`ci.yml`,
+`release.yml`, `e2e.yml`) for uv-based Python packages that publish to a
+private GitLab package registry. That is the whole job.
 
 **It is not a Python package.** No `pyproject.toml`, no `src/`, no tests.
 Nothing here executes except on a GitHub runner, in someone else's repository.
@@ -32,14 +32,18 @@ What a consuming repository must have, and what breaking it costs:
   inherit secrets.
 - `permissions: contents: write` and `actions: read` on the release caller.
   The reusable workflow does not request them.
+- For `e2e.yml`: the required `command` input, and each secret forwarded by
+  name. `secrets: inherit` reaches this action only from the same
+  organization or enterprise.
 
 Adding to that list is a **breaking change**, even when no input changed.
 
 ## Never do these
 
-- **Never remove or rename an input** of a workflow or the composite action.
-  Consumers on `@v1` break immediately, and nothing warns them. Add optional
-  inputs with defaults that preserve current behaviour.
+- **Never remove or rename an input** of a workflow or the composite action,
+  or a secret a workflow declares. Consumers on `@v1` break immediately, and
+  nothing warns them. Add optional inputs with defaults that preserve current
+  behaviour.
 - **Never change a default** in a way that changes behaviour for a caller who
   did not set it. That is the same breakage with no diff in the caller's repo.
 - **Never move the `v1` tag** as part of a change. Tagging is a deliberate,

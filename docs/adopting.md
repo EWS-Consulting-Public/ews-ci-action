@@ -106,7 +106,9 @@ tag's run is the one that matters.
 command when its owner chooses: on a manual dispatch or on a commit marked
 `[e2e]` (inputs and secrets: [workflows.md](workflows.md) § `e2e.yml`). Its
 after-release line does not fire as written ([README.md](README.md) § *Open
-questions*).
+questions*). Its caller passes the one required input, `command`, and forwards
+each secret it uses by name: `EWS_CREDENTIALS`, `EWS_GCP__DEFAULT_KEY`,
+`EWS_GCP__PROJECT`, all optional. Never `secrets: inherit` there.
 
 `basic-package.yml` and `release-basic.yml` use `secrets: inherit`, which
 passes every secret the caller repository has, and which GitHub honours only
