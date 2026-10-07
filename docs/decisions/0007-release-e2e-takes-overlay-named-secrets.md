@@ -23,10 +23,13 @@ every consuming repository, so a key inside it would reach every package whose
 tests only install a wheel. ADR 0002 traded least privilege for a single
 secret; this credential is the case where that trade does not hold.
 
-A reusable workflow receives a caller's repository secrets only when it
-declares them by name. It cannot enumerate the ones it was not given:
-`toJSON(secrets)` withholds the values, so "export every secret whose name
-starts with `EWS_`" has nothing to iterate.
+A reusable workflow sees only the secrets its caller passes. A caller passes
+a secret by name only when the workflow declares it. `secrets: inherit`
+passes everything, but GitHub honours it only for a workflow in the same
+organization or enterprise as the caller, and this action is called from
+other organizations. So "export every secret whose name starts with `EWS_`"
+would iterate the declared secrets and nothing else; declaring each overlay
+by name says the same thing plainly.
 
 ## Decision
 

@@ -99,7 +99,8 @@ file or flat name, so a library needs no code of its own to find them.
   step logs `<NAME>: not passed`. The configuration layer reads an exported empty
   overlay as a value, which would blank the credential supplied under the flat
   name.
-- The caller forwards each by name. `secrets: inherit` also works.
+- The caller forwards each by name, as
+  [`examples/release-e2e.yml`](../examples/release-e2e.yml) does.
 
 Why: [ADR 0007](decisions/0007-release-e2e-takes-overlay-named-secrets.md).
 Caller: [`examples/release-e2e.yml`](../examples/release-e2e.yml).
@@ -134,7 +135,8 @@ secrets:
   EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
 ```
 
-or `secrets: inherit`.
+or `secrets: inherit`, which GitHub honours only when the calling workflow is
+in the same organization or enterprise as this action.
 
 **The setup step fails with `EWS_CREDENTIALS is not a JSON object`.** The
 secret's value is not the payload the tooling writes — re-run the command in
