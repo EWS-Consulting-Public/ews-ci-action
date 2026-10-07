@@ -2,10 +2,11 @@
 #
 # Delete the triggers you do not want, and the matching line of the job's `if:`.
 # The commit message is read only inside `if:`, never in a shell. A commit that
-# also carries `[skip ci]` starts nothing. A release workflow without a
-# `branches: ['v*']` filter runs after every CI run, so the after-release line
-# also checks that the run was for a `v` tag. `ref` is empty except after a
-# release, where it is the release tag.
+# also carries `[skip ci]` starts nothing. The release line keys on the event
+# the release workflow keys on, a green CI run on a `v` tag: it runs beside the
+# release, from the tag's checkout, not after the wheel is published. Never key
+# it on the release workflow: a run started by `workflow_run` runs on the
+# default branch, so its `head_branch` is never the tag.
 
 name: End-to-end
 
@@ -14,7 +15,7 @@ on:
   push:
     branches: [main]
   workflow_run:
-    workflows: ["Release to GitLab"] # your release workflow's `name:`
+    workflows: ["CI"] # your CI workflow's `name:`
     types: [completed]
 
 jobs:
@@ -27,7 +28,7 @@ jobs:
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/e2e.yml@v1
     with:
       command: uv run <your-cli> <your-end-to-end-command>
-      ref: ${{ github.event.workflow_run.head_branch }}
+      ref: ${{ github.event.workflow_run.head_branch }} # the tag on a release run, empty otherwise
     secrets:
       EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
       EWS_GCP__DEFAULT_KEY: ${{ secrets.EWS_GCP__DEFAULT_KEY }}

@@ -46,8 +46,10 @@ measured every run and published on none unless the caller asks.
 | `test` | not skipped, `run-tests` | Matrix over `python-versions`; the data plan steps when `data-plan` is set; `uv run pytest` with or without coverage; `fail-fast: false` |
 | `build` | not skipped, `run-build`, **after `lint` and `test`** | `uvx nox -s build` or `uv build --wheel`; uploads `dist/` |
 
-`lint` calls the composite action with `install-dependencies: "false"` — ruff
-is fetched by `uv run` on demand rather than syncing the whole project.
+`lint` calls the composite action with `install-dependencies: "false"`, so the
+action's `uv sync --all-extras` does not run. `uv run` still syncs the
+project's default environment, without extras, before it starts ruff, and the
+registry auth the action wrote is what lets that sync resolve private wheels.
 
 ### The data plan
 
@@ -80,7 +82,7 @@ each skipped entirely when the input is empty:
      an older key under the `ews-data-<OS>-` prefix, so the log reads
      `plan-ensure took <n>s after a cache miss on <key>: restored <matched
      key> instead, an older cache under the restore-keys prefix, so the data
-     root was already populated, and a 0-object fetch only proves the
+     root was already populated - a 0-object fetch only proves the
      digests still match, not that the store was reached`. This is the case
      a plain hit or miss reading gets wrong: the exact key missed, but the
      data root was not empty, and a run that fetched nothing did not prove
@@ -93,13 +95,21 @@ each skipped entirely when the input is empty:
 
 What the consuming repository must have: `ews-cloud-storage` among its
 dependencies (it provides `ews-storage`, and the composite action's `uv sync`
-has already installed it); `gcp_default_key` in its `EWS_CREDENTIALS` (exported
-as `GCP_DEFAULT_KEY`, which is how `plan ensure` authenticates); a committed lock
+has already installed it); in its `EWS_CREDENTIALS`, the keys of the store the
+dataset document points at, by its scheme (table below); a committed lock
 beside the plan, kept current by that package's own hook; and a dataset
-document that binds its data root to `EWS_DATA_ROOT` — a document bound to
+document that binds its data root to `EWS_DATA_ROOT`: a document bound to
 another variable lands its files outside the cached directory. Why the cache
 is the whole data root and the key is the plan's lock:
 [ADR 0006](decisions/0006-data-plan-caches-the-data-root-on-the-plan-lock.md).
+
+| Dataset store | Keys in `EWS_CREDENTIALS` | Exported as, and read by `plan ensure` |
+| --- | --- | --- |
+| `gs://`, Google Cloud Storage | `gcp_default_key` | `GCP_DEFAULT_KEY` |
+| `s3://`, the S3-compatible store | `synologyc2_default_key_id`, `synologyc2_default_secret_key` | `SYNOLOGYC2_DEFAULT_KEY_ID`, `SYNOLOGYC2_DEFAULT_SECRET_KEY` |
+
+The composite action does not know the scheme. It exports every key the secret
+carries, so a plan on either store needs nothing here beyond `data-plan`.
 
 The lint and build jobs do not run the data steps; only tests read data.
 
@@ -201,7 +211,7 @@ None is required.
 
 | Secret | Reaches |
 | --- | --- |
-| `EWS_CREDENTIALS` | The setup step. Without it the setup step installs nothing private |
+| `EWS_CREDENTIALS` | The setup step, which exports every key to the job, the command's step included. Without it no credential is exported and no registry auth is written |
 | `EWS_GCP__DEFAULT_KEY` | The `End-to-end` step only, as an environment overlay of the EWS configuration layer |
 | `EWS_GCP__PROJECT` | The `End-to-end` step only, as an environment overlay of the EWS configuration layer |
 
@@ -211,6 +221,8 @@ The single `e2e` job runs on `ubuntu-latest`:
 
 1. Checkout at `ref`.
 2. `setup-ews-ci` with `install-dependencies: "false"`, as `release.yml` calls it.
+   Nothing is synced before the command; a `uv run` inside it syncs the
+   project's default environment.
 3. `End-to-end`, with no `if:` because the command is required. The command and
    the two overlay secrets reach the step through `env:`. The step logs
    `<NAME>: set` or `<NAME>: not passed` for each secret, unsets one that is
@@ -225,14 +237,15 @@ into a `run:` block. The same holds for the commit message a caller tests in its
 
 [`examples/e2e.yml`](../examples/e2e.yml) shows three: a manual
 `workflow_dispatch`, a push to `main` whose commit message contains `[e2e]`, and
-the completion of the caller's release workflow. A caller keeps the ones it wants.
-The after-release line also tests that the run was for a `v` tag, because a
-release workflow without a `branches: ['v*']` filter runs after every CI run
-and only its job is skipped.
+a release: a green CI run on a `v` tag, the event `release.yml` keys on. A
+caller keeps the ones it wants.
 
-GitHub limits a `workflow_run` chain to three levels. The after-release trigger
-is the third (CI, then the release, then this), and that path is not exercised
-here.
+The release line runs beside the release job, from the tag's checkout, and
+passes the tag as `ref`. It does not wait for the wheel to be published. It
+must not key on the release workflow instead: a run started by `workflow_run`
+runs on the default branch, so the completed release run's `head_branch` names
+that branch, never the tag (seen in a consuming repository's release runs on
+2026-10-07).
 
 ### The self-test
 
@@ -247,5 +260,7 @@ repository secret.
 
 Job ordering, conditions and commands are read from the YAML. The data plan
 steps were first observed on a runner on 2026-09-05 in a purpose-built
-consuming repository; `release.yml` has not been observed here, and neither has `e2e.yml`,
-including its self-test, which runs only once pushed.
+consuming repository. `release.yml` was observed only in a consuming
+repository's run history ([README.md](README.md) § *Not verified*).
+`e2e-selftest.yml` ran green on this repository's pull request on 2026-10-07;
+the release trigger and a real end-to-end command were not run.

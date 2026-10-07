@@ -65,8 +65,10 @@ at `@my-branch` instead of `@v1`. See [`docs/releasing.md`](docs/releasing.md).
 2. [`docs/decisions/`](docs/decisions/) — the ADRs. If you are about to
    propose splitting `EWS_CREDENTIALS` into separate secrets, converting the
    composite action to JavaScript, having the release job download CI's
-   artifact, pinning consumers to exact tags, or caching a dataset by its
-   own paths rather than the data root — that argument is already recorded.
+   artifact, pinning consumers to exact tags, caching a dataset by its own
+   paths rather than the data root, or giving the end-to-end workflow a
+   trigger of its own or its key inside `EWS_CREDENTIALS`: that argument is
+   already recorded.
    Read the ADR before reopening it.
 3. Always-on rules `public-repo-boundary` (what may never be written here) and
    `ci-action-project` (the scope, the consumer contract, the do-nots).
@@ -96,9 +98,9 @@ the action writes), [`workflows.md`](docs/workflows.md) (every input),
   and reaches every consuming repository at once, untested
   ([ADR 0004](docs/decisions/0004-v1-is-a-moving-major-tag.md)). Tagging is
   Fabien's call.
-- **Never remove or rename a workflow input.** Consumers on `@v1` break
-  immediately and silently. Add optional inputs with behaviour-preserving
-  defaults instead.
+- **Never remove or rename a workflow input or declared secret.** Consumers
+  on `@v1` break immediately and silently. Add optional inputs with
+  behaviour-preserving defaults instead.
 - **Never edit `.claude/` by hand** — generated from `.cursor/`.
 - **Do not cite pre-2026-08-07 documentation from git history without
   verifying against the YAML.** Eleven claims in the old docs were wrong;

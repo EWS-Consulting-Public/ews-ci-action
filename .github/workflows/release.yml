@@ -23,8 +23,8 @@ on:
         description: "Repository secret - JSON object with all EWS credentials"
         required: true
 
-# Note: Caller workflow must set 'permissions: contents: write' or 'permissions: inherit'
-# to allow GitHub release creation
+# The caller workflow must set 'permissions: contents: write' and 'actions: read'
+# to allow GitHub release creation; this workflow requests none
 
 jobs:
   release:

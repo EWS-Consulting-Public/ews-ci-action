@@ -16,8 +16,9 @@ messages, issue text — is world-readable and permanent. Read
   `uv run --no-project python scripts/sync_agent_config.py`. `prek` runs
   `--check`. `--no-project` because there is no `pyproject.toml`.
 - Rules: [`.claude/rules/`](.claude/rules/) — generated from
-  `.cursor/rules/*.mdc`. Claude loads **all** of them, so each carries an
-  **Applies to** header naming the paths it is scoped to in Cursor. Skip a rule
+  `.cursor/rules/*.mdc`. Claude loads an always-on rule at session start, and
+  a scoped one, which carries `paths:` frontmatter, when it reads a matching
+  file. Each carries an **Applies to** header naming its scope; skip a rule
   whose paths your change does not touch.
 - Policy: [`.claude/rules/agent-config-sync.md`](.claude/rules/agent-config-sync.md)
 - Memory store, if one exists on this host, is per-repo and per-host and is

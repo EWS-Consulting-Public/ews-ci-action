@@ -14,7 +14,7 @@ for the end-to-end workflow only.
 
 A package that runs work in the cloud may prove one real case: a command,
 supplied by that package, that submits a job and reads back what it produced.
-When that runs is the package's call. One package wants it after each
+When that runs is the package's call. One package wants it with each
 release, another on demand, another when a commit asks for it.
 
 That command needs a credential that belongs to that one repository, such as
@@ -53,9 +53,11 @@ other organizations.
 ## Consequences
 
 - **The trigger is the consumer's.** A manual `workflow_dispatch`, a push
-  whose commit message carries a marker, the completion of the release
-  workflow: each is a line in the consumer's caller, and none needs a change
-  here. `examples/e2e.yml` shows all three.
+  whose commit message carries a marker, a green CI run on a release tag:
+  each is a line in the consumer's caller, and none needs a change here.
+  `examples/e2e.yml` shows all three. The release line keys on CI, like
+  `release.yml`, not on the release workflow: a run started by `workflow_run`
+  runs on the default branch, so its `head_branch` is never the tag.
 - **The key reaches one step of one repository's run.** Build, publish and
   test steps never see it, and neither do `ci.yml` and `release.yml`.
 - **An empty overlay is not harmless, which is why the step unsets it.** The

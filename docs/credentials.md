@@ -44,8 +44,8 @@ file it would feed is skipped.
 | `gitlab_package_registry_url` | `GITLAB_PACKAGE_REGISTRY_URL` | both of the above, and `~/.pypirc` | Both paths; required alongside either token |
 | `gitlab_api_token` | `GITLAB_API_TOKEN` | `~/.pypirc` | **Publishing** during a release |
 | `gitlab_package_registry_id` | `GITLAB_PACKAGE_REGISTRY_ID` | — | The EWS GitLab tooling, when a test reaches the registry API |
-| `gcp_default_key` | `GCP_DEFAULT_KEY` | (none) | **Fetching datasets** from the bucket, via `ews-storage plan ensure`, so `ci.yml`'s `data-plan:` input |
-| `synologyc2_default_key_id` | `SYNOLOGYC2_DEFAULT_KEY_ID` | (none) | Reading or writing the S3-compatible object store, `s3://` URIs through `ews-storage` |
+| `gcp_default_key` | `GCP_DEFAULT_KEY` | (none) | Reading or writing Google Cloud Storage, `gs://` URIs through `ews-storage`; so `ci.yml`'s `data-plan:` for a dataset on `gs://` |
+| `synologyc2_default_key_id` | `SYNOLOGYC2_DEFAULT_KEY_ID` | (none) | Reading or writing the S3-compatible object store, `s3://` URIs through `ews-storage`; so `ci.yml`'s `data-plan:` for a dataset on `s3://` |
 | `synologyc2_default_secret_key` | `SYNOLOGYC2_DEFAULT_SECRET_KEY` | (none) | Same |
 | `ammonit_or_password` | `AMMONIT_OR_PASSWORD` | `~/.config/ews/config/ammonit-or.toml` | Packages whose tests reach that data source |
 | `windcube_insights_password` | `WINDCUBE_INSIGHTS_PASSWORD` | `~/.config/ews/config/windcube-insights.toml` | Same |
@@ -145,9 +145,11 @@ secret's value is not the payload the tooling writes — re-run the command in
 **The setup step fails naming missing keys.** The secret and the variable were
 written at different times. Re-run the command; it rewrites both.
 
-**A dataset fetch fails with a credential error.** Look for
-`✅ Exported GCP_DEFAULT_KEY` in the setup step's log. If it is absent, the
-secret predates that key — re-run the command.
+**A dataset fetch fails with a credential error.** Look in the setup step's
+log for the names the dataset's store needs: `✅ Exported GCP_DEFAULT_KEY` for
+`gs://`, `✅ Exported SYNOLOGYC2_DEFAULT_KEY_ID` and
+`✅ Exported SYNOLOGYC2_DEFAULT_SECRET_KEY` for `s3://`. If one is absent, the
+secret predates that key: re-run the command.
 
 **The release job never starts.** It requires a *successful* CI run whose
 `head_branch` starts with `v`. Verify the tag matches, and that CI itself went

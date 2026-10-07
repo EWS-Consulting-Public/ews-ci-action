@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: why setup-ews-ci is a composite action and what that costs consumers
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # ADR 0001 — The setup step is a composite action
@@ -32,6 +32,9 @@ The whole implementation is one `astral-sh/setup-uv@v7` step, a
 `uv python install`, one `shell: bash` block of roughly 130 lines, and a
 conditional `uv sync`.
 
+2026-10-07: the block is now `action.yml:40-221`, about 180 lines, after the
+credential export, the key validation and the data root were added.
+
 ## Consequences
 
 - **The side effects are files on the runner, not action outputs.** This action
@@ -54,6 +57,10 @@ conditional `uv sync`.
   construction: every credential block is an `if` that prints an informational
   message and continues, so a misconfiguration surfaces later, in `uv sync`,
   rather than at the point of failure.
+
+  2026-10-07: a payload that is not a JSON object, or lacks a key
+  `EWS_CREDENTIALS_KEYS` names, now fails the step (`action.yml:76-91`); the
+  file blocks still print and continue.
 - **It is Linux-only in practice.** `shell: bash` with `~/.config` paths. A
   JavaScript action would have been cross-platform for free. Nothing here has
   been exercised on a Windows or macOS runner.
@@ -66,9 +73,15 @@ the file. Verified 2026-08-07.
 `ci.yml:107`, `:132`, `:162` — three separate `uses:` of the composite action,
 one per job.
 
+2026-10-07: now `ci.yml:112`, `:137`, `:247`; `release.yml:44` and
+`e2e.yml:48` call it too.
+
 ## Related
 
 - [../action-reference.md](../action-reference.md) — every file it writes
 - [ADR 0002](0002-one-credentials-secret-not-many.md) — what it parses
 - [ADR 0003](0003-dataset-cache-redirected-into-the-workspace.md) — the one
   environment variable it sets
+
+  2026-10-07: it now exports every credential key, `EWS_DATA_ROOT` and that
+  variable to the job ([../action-reference.md](../action-reference.md)).

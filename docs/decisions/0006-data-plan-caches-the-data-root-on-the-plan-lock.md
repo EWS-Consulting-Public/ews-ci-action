@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the data-plan input - what is cached, what the key is, and why plan-ensure always runs
-last-verified: 2026-09-05
+last-verified: 2026-10-07
 ---
 
 # ADR 0006 — `data-plan:` caches the whole data root, keyed on the plan's lock
@@ -43,6 +43,11 @@ checkout. When set, the `test` job:
    fallback;
 3. runs `uv run ews-storage plan ensure <plan>` **unconditionally** and logs the
    seconds it took beside whether the restore was a hit or a miss;
+
+   2026-10-07: the log line and a job-summary table now tell three outcomes
+   apart: an exact hit, a restore from the `restore-keys` prefix, and nothing
+   restored ([../workflows.md](../workflows.md) § *The data plan*).
+
 4. saves the cache under the exact key when the restore was not an exact hit —
    **before** pytest.
 

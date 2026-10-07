@@ -59,6 +59,7 @@ on:
   workflow_run:
     workflows: ["CI"] # must match the CI workflow's `name:`
     types: [completed]
+    branches: ["v*"] # matched against the CI run's head_branch, the tag name on a tag run
 
 permissions:
   contents: write
@@ -71,15 +72,18 @@ jobs:
       EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
 ```
 
-Three things here are load-bearing:
+Two things here are load-bearing:
 
 - **`workflows: ["CI"]` matches the CI workflow's `name:` field**, not its
   filename.
 - **The `permissions` block is required.** The reusable workflow does not
   request permissions for you, and creating a GitHub release needs
   `contents: write`.
-- **Do not filter this trigger on `branches`.** Tag runs are not branch runs;
-  the reusable workflow already tests `head_branch` for the `v` prefix itself.
+
+**`branches: ["v*"]` keeps the release workflow to tag runs.** GitHub matches
+the filter against the triggering CI run's `head_branch`, which on a tag run is
+the tag name. Without it, every CI run on a branch or a pull request also
+starts a release run, and the reusable workflow's own `v` test skips its job.
 
 ## 3. Release flow
 
@@ -100,28 +104,18 @@ tag's run is the one that matters.
 `dataset-plan.yml` for a package whose tests read a dataset from the bucket
 (§ *Customising* below), and `e2e.yml` for a package that runs one end-to-end
 command when its owner chooses: on a manual dispatch, on a commit marked
-`[e2e]`, or after a release (inputs and secrets: [workflows.md](workflows.md)
-§ `e2e.yml`).
+`[e2e]`, or with each release, beside the release job (inputs, secrets and
+triggers: [workflows.md](workflows.md) § `e2e.yml`). Its caller passes the one
+required input, `command`, and forwards
+each secret it uses by name: `EWS_CREDENTIALS`, `EWS_GCP__DEFAULT_KEY`,
+`EWS_GCP__PROJECT`, all optional. Never `secrets: inherit` there.
 
-The first three use `secrets: inherit`, which passes every secret the caller
-repository has. That is convenient and coarse; naming `EWS_CREDENTIALS`
-explicitly, as above, is the narrower form. `matrix-testing.yml` passes no
-secrets at all — it only works for a package with no private dependencies.
-
-Two of them are behind this page. Copy the snippets above rather than the files:
-
-- **`release-basic.yml` filters `workflow_run` on `branches: ['v*']`.** That is
-  the deprecated pattern § 2 tells you not to use: tag runs are not branch runs,
-  so the filter can stop the release from ever firing, and the reusable workflow
-  already tests `head_branch` for the `v` prefix itself. Delete the `branches:`
-  line if you copy that file.
-- **`basic-package.yml` comments a step "Upload to Codecov" while setting only
-  `run-coverage: true`.** `upload-coverage` defaults to `false`, so coverage is
-  collected and never uploaded. Set `upload-coverage: true` if you meant to
-  upload.
-
-The example files are left as they are on purpose — `examples/` is shipped
-product and is not edited by a documentation change.
+Every example forwards `EWS_CREDENTIALS` by name, never `secrets: inherit`,
+which GitHub honours only when the caller is in the same organization or
+enterprise as this action. `matrix-testing.yml` passes no secrets at all: it
+only works for a package with no private dependencies. `basic-package.yml`
+sets `run-coverage: true` only; `upload-coverage` defaults to `false`, so set
+it too if the coverage should reach Codecov.
 
 ## Customising
 
@@ -136,9 +130,11 @@ with:
 ```
 
 `data-plan` needs three things of the package: `ews-cloud-storage` among its
-dependencies, a committed lock beside the plan, and `gcp_default_key` in its
-`EWS_CREDENTIALS`. What the job then does, and why the cache is shaped that
-way: [workflows.md](workflows.md) § *The data plan*.
+dependencies, a committed lock beside the plan, and in its `EWS_CREDENTIALS`
+the keys of the dataset's store: `gcp_default_key` for `gs://`,
+`synologyc2_default_key_id` and `synologyc2_default_secret_key` for `s3://`.
+What the job then does, and why the cache is shaped that way:
+[workflows.md](workflows.md) § *The data plan*.
 
 Full input tables: [workflows.md](workflows.md).
 
@@ -148,7 +144,8 @@ To add steps of your own, depend on the reusable job:
 jobs:
   ci:
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/ci.yml@v1
-    secrets: inherit
+    secrets:
+      EWS_CREDENTIALS: ${{ secrets.EWS_CREDENTIALS }}
 
   extra-checks:
     needs: ci

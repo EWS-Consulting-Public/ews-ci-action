@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: why release.yml builds its own wheel instead of using CI's artifact
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # ADR 0005 — The release workflow rebuilds the wheel
@@ -15,6 +15,8 @@ last-verified: 2026-08-07
 with a 7-day retention (`ci.yml:177-183`). `release.yml` is triggered by that
 same workflow run completing successfully, so the artifact is available to it
 via `actions/download-artifact` and the `workflow_run` event's run id.
+
+2026-10-07: the upload is now `ci.yml:262-268`.
 
 Using it would be the conventional build-once-promote-many shape: the bytes
 that were tested are the bytes that ship.
@@ -49,6 +51,8 @@ nothing.
   and `uv build --wheel` (`ci.yml:169-175`); the release step has no such
   toggle. A repository that opted out of nox for CI will still fail at release
   time without the session.
+
+  2026-10-07: the toggle is now `ci.yml:254-260`.
 - **A release can succeed for a tag whose CI artifact was never uploaded** —
   for example with `upload-artifacts: false`. The two paths are independent.
 - **`uv.lock` is generated if absent** (`release.yml:51-58`) and then attached

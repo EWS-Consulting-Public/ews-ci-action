@@ -59,7 +59,7 @@ on:
         required: false
         default: ""
       data-plan:
-        description: "Path of a data plan (config/plans/<name>.yaml) whose committed lock keys a cache of the data root; the test job restores it, runs 'ews-storage plan ensure', and saves on a miss. Empty: no data step. Needs ews-cloud-storage among the package's dependencies and a gcp_default_key in EWS_CREDENTIALS."
+        description: "Path of a data plan (config/plans/<name>.yaml) whose committed lock keys a cache of the data root; the test job restores it, runs 'ews-storage plan ensure', and saves on a miss. Empty: no data step. Needs ews-cloud-storage among the package's dependencies, and in EWS_CREDENTIALS the keys of the dataset's store: gcp_default_key for gs://, synologyc2_default_key_id and synologyc2_default_secret_key for s3://."
         type: string
         required: false
         default: ""

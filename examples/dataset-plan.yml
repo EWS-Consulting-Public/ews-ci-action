@@ -3,7 +3,9 @@
 # The plan selects what the tests need; its committed lock keys a cache of
 # the data root, so the fetch is paid once per change of the data, not per
 # run. The package must depend on ews-cloud-storage, and its EWS_CREDENTIALS
-# must carry gcp_default_key (docs/workflows.md § The data plan).
+# must carry the keys of the dataset's store: gcp_default_key for gs://,
+# synologyc2_default_key_id and synologyc2_default_secret_key for s3://
+# (docs/workflows.md § The data plan).
 
 name: CI
 

@@ -40,7 +40,7 @@ coverage, and a wheel build that runs only after both pass.
 | [`examples/`](examples/) | Copy-paste caller workflows |
 
 All three workflows are `workflow_call`-only. They do not run on this repository's
-own pushes.
+own pushes; `e2e-selftest.yml` calls `e2e.yml` on its pull requests.
 
 ## Requirements for a consuming repository
 
@@ -51,6 +51,9 @@ own pushes.
 - An `EWS_CREDENTIALS` repository secret — a single JSON object, every key of
   which the action exports to the job as an environment variable. See
   [docs/credentials.md](docs/credentials.md).
+- For `e2e.yml`, the command to run as its required `command` input, and each
+  secret forwarded by name. See [docs/workflows.md](docs/workflows.md)
+  § `e2e.yml`.
 - Optionally, a data plan: `data-plan: config/plans/<name>.yaml` fetches the
   tests' dataset once and caches it on the plan's committed lock. See
   [docs/workflows.md](docs/workflows.md) § *The data plan*.
