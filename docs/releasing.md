@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: changing this repository, testing a change, and moving the version tags
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # Changing and releasing this repository
@@ -52,13 +52,20 @@ git push origin v2
 Force-pushing `v1` is deliberate and is the only place in this repository where
 that is correct.
 
-**Current state (2026-09-22):** `v1` was moved to `v1.2.0` on 2026-09-22 (the
-data-plan step logs which of three things the cache did: an exact hit, a
-restore from the `restore-keys` prefix, or nothing restored). Before that it
-sat on `v1.1.0` from 2026-09-13 (the step moved to `ews-storage plan ensure`),
-and on `33e94f6` from 2026-09-05 (the credential export and `data-plan:`);
-`v1.0` still marks `952e37c`. `v1.1.0`, `v1.2.0` and the moved `v1` are
-annotated; the older tags are lightweight.
+**Current state (2026-10-07):** `v1` was moved to `v1.3.0` on 2026-10-07
+(`e2e.yml`, the end-to-end workflow a consumer triggers, ADR 0007). Before that
+it sat on `v1.2.0` from 2026-09-22 (the data-plan step logs which of three
+things the cache did: an exact hit, a restore from the `restore-keys` prefix,
+or nothing restored), on `v1.1.0` from 2026-09-13 (the step moved to
+`ews-storage plan ensure`), and on `33e94f6` from 2026-09-05 (the credential
+export and `data-plan:`); `v1.0` still marks `952e37c`. `v1.1.0`, `v1.2.0`,
+`v1.3.0` and the moved `v1` are annotated; the older tags are lightweight.
+
+`v1.3.0` adds files and changes none of `ci.yml`, `release.yml` or the
+composite action, so no consuming repository was pointed at its branch. Its
+own self-test ran on the pull request: the passed overlay logged `set`, the
+unpassed one `not passed`, and the command saw the first set and the second
+unset. The after-release trigger and a real end-to-end command were not run.
 
 `v1.2.0` was tested from one consuming repository before the tag moved, not
 the two this page asks for: a cold run logged `nothing restored` with four
