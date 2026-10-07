@@ -85,25 +85,25 @@ the command.
 
 ## Overlay-named secrets
 
-`release.yml` also accepts two optional repository secrets, `EWS_GCP__DEFAULT_KEY`
+`e2e.yml` also accepts two optional repository secrets, `EWS_GCP__DEFAULT_KEY`
 and `EWS_GCP__PROJECT`. They are environment overlays of the EWS configuration
 layer: the name is `EWS_<SECTION>__<FIELD>`, and the layer reads it ahead of any
 file or flat name, so a library needs no code of its own to find them.
 
 - **They are separate repository secrets, never keys of `EWS_CREDENTIALS`.** A
   key in that object reaches every consuming repository; these belong to one.
-- **Only the release workflow's `End-to-end` step sees them**, and only when the
-  caller sets `e2e-command`. No other step and no `ci.yml` job receives them,
-  and the action does not write them to `$GITHUB_ENV`.
+- **Only the end-to-end workflow's command step sees them.** No other step, no
+  `ci.yml` job and no `release.yml` step receives them, and the action does not
+  write them to `$GITHUB_ENV`.
 - **A secret the caller did not pass is unset**, not exported empty, and the
   step logs `<NAME>: not passed`. The configuration layer reads an exported empty
   overlay as a value, which would blank the credential supplied under the flat
   name.
 - The caller forwards each by name, as
-  [`examples/release-e2e.yml`](../examples/release-e2e.yml) does.
+  [`examples/e2e.yml`](../examples/e2e.yml) does.
 
-Why: [ADR 0007](decisions/0007-release-e2e-takes-overlay-named-secrets.md).
-Caller: [`examples/release-e2e.yml`](../examples/release-e2e.yml).
+Why: [ADR 0007](decisions/0007-e2e-workflow-the-consumer-triggers.md).
+Caller: [`examples/e2e.yml`](../examples/e2e.yml).
 
 ## Rules for this repository
 

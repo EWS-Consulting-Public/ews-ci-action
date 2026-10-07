@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the docs/ tree itself
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # ews-ci-action — documentation map
@@ -31,6 +31,10 @@ flowchart TD
         RB["rebuild wheel"] --> PUB["publish to GitLab registry"]
         PUB --> GHR["GitHub release"]
     end
+    CALLER["consuming repo's own trigger<br/>dispatch · commit marker · after release"] -->|"uses: …/e2e.yml@v1"| E2E
+    subgraph E2E["e2e.yml (reusable)"]
+        EC["checkout ref"] --> EX["one command, overlay secrets in its environment"]
+    end
 ```
 
 Two things on that diagram catch people out. **Every job calls the composite
@@ -58,7 +62,7 @@ Every file under `docs/` carries a YAML header. `status:` is greppable —
 | --- | --- | --- |
 | [adopting.md](adopting.md) | How does a repository start using this? | `as-built` |
 | [action-reference.md](action-reference.md) | What does `setup-ews-ci` write onto the runner? | `as-built` |
-| [workflows.md](workflows.md) | Every input, job and condition of the two workflows | `as-built` |
+| [workflows.md](workflows.md) | Every input, job and condition of the three workflows | `as-built` |
 | [credentials.md](credentials.md) | What `EWS_CREDENTIALS` holds and how each key is consumed | `as-built` |
 | [releasing.md](releasing.md) | Changing this repository and moving the `v1` tag | `as-built` |
 | [decisions/](decisions/) | Why is it like this? | dated ADRs |
@@ -76,7 +80,7 @@ Reading order for someone new: this file, then `adopting.md`, then
 | [0004](decisions/0004-v1-is-a-moving-major-tag.md) | `v1` is force-moved to the newest `v1.x`; consumers track a major version, not a commit |
 | [0005](decisions/0005-release-rebuilds-rather-than-downloading.md) | `release.yml` rebuilds the wheel instead of downloading CI's artifact |
 | [0006](decisions/0006-data-plan-caches-the-data-root-on-the-plan-lock.md) | `data-plan:` caches the whole data root keyed on the plan's committed lock, and `plan-ensure` always runs |
-| [0007](decisions/0007-release-e2e-takes-overlay-named-secrets.md) | The release workflow's end-to-end step takes overlay-named secrets declared beside `EWS_CREDENTIALS`, and unsets one that was not passed |
+| [0007](decisions/0007-e2e-workflow-the-consumer-triggers.md) | End-to-end runs are their own reusable workflow, `e2e.yml`, with no trigger: the consumer's caller decides when it runs. It declares overlay-named secrets beside `EWS_CREDENTIALS` and unsets one that was not passed |
 
 ## Not carried forward from the pre-2026-08-07 docs
 
@@ -93,8 +97,9 @@ rewritten, so that their absence reads as a decision rather than an oversight:
   is real; nothing in this repository implements it, so it is not documented as
   if it did.
 - **An "adding a new reusable workflow" procedure** — [releasing.md](releasing.md)
-  covers changing the existing two, which is what actually happens. A third
-  workflow would be an ADR before it was a procedure.
+  covers changing the existing workflows, which is what actually happens. A new
+  workflow is an ADR before it is a procedure; [ADR 0007](decisions/0007-e2e-workflow-the-consumer-triggers.md)
+  is that ADR for `e2e.yml`.
 
 Restoring any of these is a deliberate choice, not a gap to be quietly filled.
 

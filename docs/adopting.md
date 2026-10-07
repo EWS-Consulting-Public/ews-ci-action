@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: putting these workflows into a consuming repository
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # Adopting `ews-ci-action`
@@ -96,9 +96,12 @@ tag's run is the one that matters.
 ## Examples
 
 [`examples/`](../examples/) holds copy-paste callers:
-`basic-package.yml`, `matrix-testing.yml`, `release-basic.yml`, and
+`basic-package.yml`, `matrix-testing.yml`, `release-basic.yml`,
 `dataset-plan.yml` for a package whose tests read a dataset from the bucket
-(§ *Customising* below).
+(§ *Customising* below), and `e2e.yml` for a package that runs one end-to-end
+command when its owner chooses: on a manual dispatch, on a commit marked
+`[e2e]`, or after a release (inputs and secrets: [workflows.md](workflows.md)
+§ `e2e.yml`).
 
 The first three use `secrets: inherit`, which passes every secret the caller
 repository has. That is convenient and coarse; naming `EWS_CREDENTIALS`

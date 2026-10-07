@@ -1,8 +1,9 @@
 # AGENTS.md — ews-ci-action
 
 Reusable GitHub Actions CI/CD for uv-based Python packages: one composite
-action that provisions a runner, and two `workflow_call` workflows that lint,
-test, build and release the packages that call them.
+action that provisions a runner, and three `workflow_call` workflows that lint,
+test, build and release the packages that call them, or run one end-to-end
+command for them.
 
 > ## ⚠ THIS REPOSITORY IS PUBLIC
 >
@@ -27,6 +28,8 @@ runner, and what silently does nothing — not an API.
 .github/actions/setup-ews-ci/action.yml   the composite action - uv, Python, credential files
 .github/workflows/ci.yml                  reusable: check-skip -> lint -> test (matrix) -> build
 .github/workflows/release.yml             reusable: on a green tagged CI run, build, publish, release
+.github/workflows/e2e.yml                 reusable: one command with overlay secrets; the caller owns the trigger
+.github/workflows/e2e-selftest.yml        calls e2e.yml on this repository's own pull requests
 examples/                                 copy-paste caller workflows
 docs/                                     documentation map + ADRs
 scripts/sync_agent_config.py              generates .claude/ from .cursor/
