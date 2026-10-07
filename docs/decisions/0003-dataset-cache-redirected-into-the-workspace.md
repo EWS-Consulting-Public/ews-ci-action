@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the EWS_DATASETS_SYSTEM_CACHE_PATH override and its scope
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # ADR 0003 — The dataset system cache is redirected into the workspace

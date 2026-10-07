@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the floating v1 tag convention and what it means for consumers
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # ADR 0004 — `v1` is a moving major-version tag
@@ -43,6 +43,11 @@ Every reference in this repository's own examples and workflows uses `@v1`,
 including the workflows' internal calls to their own composite action
 (`ci.yml:107`, `:132`, `:162`, `release.yml:44`).
 
+2026-10-07: now `ci.yml:112`, `:137`, `:247`, `release.yml:44` and
+`e2e.yml:48`. `e2e-selftest.yml:15` calls `./.github/workflows/e2e.yml` by
+relative path, so the self-test runs the branch's `e2e.yml` with the
+composite action from `v1`.
+
 ## Consequences
 
 - **A fix reaches every consuming repository with no PR anywhere.** This is the
@@ -78,6 +83,9 @@ v1.0
 Both point at `952e37c`, and both are **lightweight**, not annotated — the
 `-a` / `-fa` form documented above was not used to create them. Nothing depends
 on the distinction today; `uses:` resolves either.
+
+2026-10-07: more tags exist and `v1` is now annotated;
+`git ls-remote --tags origin` lists each tag and the commit it points at.
 
 ## Related
 

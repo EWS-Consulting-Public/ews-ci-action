@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: why credentials arrive as one JSON secret rather than N repository secrets
-last-verified: 2026-08-07
+last-verified: 2026-10-07
 ---
 
 # ADR 0002 — All credentials arrive as one JSON secret
@@ -30,6 +30,9 @@ workflow file has to be edited before the new credential reaches them.
 composite action parses it with `jq` and extracts each key by name
 (`action.yml:70-88`).
 
+2026-10-07: no key is extracted by name; `action.yml:98-121` exports every key
+as `UPPER(key)`.
+
 A companion repository *variable*, `EWS_CREDENTIALS_KEYS`, was intended to
 carry the list of keys that ought to be present, so the action could validate
 the secret's shape.
@@ -39,8 +42,14 @@ the secret's shape.
 - **Adding a credential does not touch any consumer's YAML.** A new key in the
   JSON plus a new extraction line in `action.yml` reaches every repository on
   `@v1` at once. This is the property being bought.
+
+  2026-10-07: no extraction line is needed any more; a new key reaches the job
+  with no change here.
 - **The workflow interface stays at one secret.** `ci.yml:61-64` and
   `release.yml:21-24` each declare exactly one, and a caller forwards one line.
+
+  2026-10-07: now `ci.yml:66-69`; `e2e.yml:25-34` declares `EWS_CREDENTIALS`
+  and two overlay secrets ([ADR 0007](0007-e2e-workflow-the-consumer-triggers.md)).
 - **The secret is all-or-nothing.** GitHub secrets have no sub-scoping, so a
   workflow that only needs to *install* private wheels still receives the
   publish token and both data-source passwords. There is no least-privilege
@@ -49,6 +58,9 @@ the secret's shape.
   `jq -r '.key // empty'` on invalid JSON yields empty for every key, so the
   action takes the same "no credentials" branch and continues. There is no
   parse check and no failure.
+
+  2026-10-07: a payload that is not a JSON object now fails the step
+  (`action.yml:76-79`).
 - **GitHub's log masking is applied to the whole JSON blob**, which it will
   redact if it appears verbatim. The individual values parsed out of it by `jq`
   are separate strings; do not add a step that echoes one.
@@ -61,21 +73,33 @@ the secret's shape.
   compensate for the loss of per-secret typing does not exist, and a key
   missing from the JSON is discovered as a `401` in `uv sync`.
 
+  2026-10-07: implemented; `action.yml:82-95` fails the step naming every key
+  the array lists and the object lacks.
+
 ## Evidence
 
 `action.yml:74-78` — five `jq -r '.<key> // empty'` extractions from
 `$EWS_CREDENTIALS`.
 
+2026-10-07: replaced by the loop at `action.yml:98-121`.
+
 `action.yml:81-88` — the else branch sets all five to the empty string and
 prints `⚠️ No EWS_CREDENTIALS provided`.
 
+2026-10-07: now `action.yml:73-74`, which prints the warning and exports
+nothing.
+
 `action.yml:93`, `:123`, `:143`, `:155` — each downstream file is written only
 when its inputs are non-empty; none is required.
+
+2026-10-07: now `action.yml:142`, `:172`, `:192`, `:204`.
 
 ## Related
 
 - [../credentials.md](../credentials.md) — the keys and where each one lands
 - [../README.md](../README.md) § *Open questions* — the unread variable
+
+  2026-10-07: that entry is closed; the variable is read.
 - [ADR 0001](0001-composite-action-not-javascript.md) — why the parsing is
   `jq` in bash
 - [ADR 0007](0007-e2e-workflow-the-consumer-triggers.md): the end-to-end
