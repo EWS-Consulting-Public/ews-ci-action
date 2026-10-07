@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the setup-ews-ci composite action - inputs, what it exports to the job, and every file it writes
-last-verified: 2026-09-05
+last-verified: 2026-10-07
 ---
 
 # `setup-ews-ci` — what it does to the runner
