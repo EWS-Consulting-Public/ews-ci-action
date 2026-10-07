@@ -226,6 +226,9 @@ into a `run:` block. The same holds for the commit message a caller tests in its
 [`examples/e2e.yml`](../examples/e2e.yml) shows three: a manual
 `workflow_dispatch`, a push to `main` whose commit message contains `[e2e]`, and
 the completion of the caller's release workflow. A caller keeps the ones it wants.
+The after-release line also tests that the run was for a `v` tag, because a
+release workflow without a `branches: ['v*']` filter runs after every CI run
+and only its job is skipped.
 
 GitHub limits a `workflow_run` chain to three levels. The after-release trigger
 is the third (CI, then the release, then this), and that path is not exercised

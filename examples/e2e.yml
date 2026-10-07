@@ -2,7 +2,9 @@
 #
 # Delete the triggers you do not want, and the matching line of the job's `if:`.
 # The commit message is read only inside `if:`, never in a shell. A commit that
-# also carries `[skip ci]` starts nothing. `ref` is empty except after a
+# also carries `[skip ci]` starts nothing. A release workflow without a
+# `branches: ['v*']` filter runs after every CI run, so the after-release line
+# also checks that the run was for a `v` tag. `ref` is empty except after a
 # release, where it is the release tag.
 
 name: End-to-end
@@ -20,7 +22,8 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && contains(github.event.head_commit.message, '[e2e]')) ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+        startsWith(github.event.workflow_run.head_branch, 'v'))
     uses: EWS-Consulting-Public/ews-ci-action/.github/workflows/e2e.yml@v1
     with:
       command: uv run <your-cli> <your-end-to-end-command>
