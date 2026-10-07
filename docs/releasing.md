@@ -97,8 +97,9 @@ Not breaking:
 1. Add to the `inputs:` block with a description and a default.
 2. Thread it through every layer that needs it — the workflow input, the
    `uses:` call sites, the composite action's input, the step environment.
-   `ews-credentials-keys` is threaded through all four and read by none; that
-   is the failure mode to avoid.
+   `ews-credentials-keys` is the worked example: threaded through all four and
+   read by the setup script. An input threaded through every layer and read
+   by none is the failure mode to avoid.
 3. Update [workflows.md](workflows.md) or [action-reference.md](action-reference.md).
 4. Add an example under `examples/` if it changes how a caller is written.
 

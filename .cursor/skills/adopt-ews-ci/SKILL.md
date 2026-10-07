@@ -202,8 +202,8 @@ The `End-to-end` step logs `<NAME>: set` for each overlay forwarded and
 
 | Symptom | Cause |
 | --- | --- |
-| `⚠️ No EWS_CREDENTIALS provided` although the secret is set | The caller did not forward it — reusable workflows do not inherit secrets. Add the `secrets:` block, or `secrets: inherit`. Same message if the secret's value is not valid JSON, because every `jq` extraction then yields empty |
-| `401` / unresolvable dependency in `uv sync` | `gitlab_api_read_token` and `gitlab_package_registry_url` must **both** be in the JSON; the action needs the pair and skips the registry silently if either is absent |
+| `⚠️ No EWS_CREDENTIALS provided` although the secret is set | The caller did not forward it: reusable workflows do not inherit secrets. Add the `secrets:` block; `secrets: inherit` reaches this action only from the same organization or enterprise. A value that is not a JSON object fails the step instead, with `EWS_CREDENTIALS is not a JSON object` |
+| `401` / unresolvable dependency in `uv sync` | `gitlab_api_read_token` and `gitlab_package_registry_url` must **both** be in the JSON; the action needs the pair, and skips the registry with only an `ℹ️` line if either is absent |
 | Release job never starts | CI did not run on the tag, CI was not green, `workflows:` does not match the CI workflow's `name:`, or the tag does not start with `v` |
 | Release fails at "Build package" | No `nox -s build` session. `release.yml` calls it unconditionally, regardless of `use-nox-build` |
 | `EWS_GCP__…: not passed` although the secret is set | The end-to-end caller did not forward it by name in its `secrets:` block |

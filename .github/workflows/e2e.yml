@@ -24,7 +24,7 @@ on:
         default: ""
     secrets:
       EWS_CREDENTIALS:
-        description: "Repository secret - JSON object with all EWS credentials; without it the setup step installs nothing private"
+        description: "Repository secret - JSON object with all EWS credentials; without it the setup step exports no credential and writes no registry auth"
         required: false
       EWS_GCP__DEFAULT_KEY:
         description: "Repository secret - environment overlay of the EWS configuration layer (service-account key); passed only to the command's step"

@@ -38,8 +38,8 @@ flowchart TD
 ```
 
 Two things on that diagram catch people out. **Every job calls the composite
-action separately** — each is a fresh runner, so credentials and the uv cache
-are set up three or four times per CI run, not once. And **`release.yml`
+action separately**: each is a fresh runner, so credentials and the uv cache
+are set up once per job and per matrix entry, not once per run. And **`release.yml`
 rebuilds the wheel rather than downloading the artifact `ci.yml` uploaded**;
 the `dist/` artifact is for humans, not for the release path
 ([ADR 0005](decisions/0005-release-rebuilds-rather-than-downloading.md)).

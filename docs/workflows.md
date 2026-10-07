@@ -46,8 +46,10 @@ measured every run and published on none unless the caller asks.
 | `test` | not skipped, `run-tests` | Matrix over `python-versions`; the data plan steps when `data-plan` is set; `uv run pytest` with or without coverage; `fail-fast: false` |
 | `build` | not skipped, `run-build`, **after `lint` and `test`** | `uvx nox -s build` or `uv build --wheel`; uploads `dist/` |
 
-`lint` calls the composite action with `install-dependencies: "false"` — ruff
-is fetched by `uv run` on demand rather than syncing the whole project.
+`lint` calls the composite action with `install-dependencies: "false"`, so the
+action's `uv sync --all-extras` does not run. `uv run` still syncs the
+project's default environment, without extras, before it starts ruff, and the
+registry auth the action wrote is what lets that sync resolve private wheels.
 
 ### The data plan
 
@@ -80,7 +82,7 @@ each skipped entirely when the input is empty:
      an older key under the `ews-data-<OS>-` prefix, so the log reads
      `plan-ensure took <n>s after a cache miss on <key>: restored <matched
      key> instead, an older cache under the restore-keys prefix, so the data
-     root was already populated, and a 0-object fetch only proves the
+     root was already populated - a 0-object fetch only proves the
      digests still match, not that the store was reached`. This is the case
      a plain hit or miss reading gets wrong: the exact key missed, but the
      data root was not empty, and a run that fetched nothing did not prove
@@ -209,7 +211,7 @@ None is required.
 
 | Secret | Reaches |
 | --- | --- |
-| `EWS_CREDENTIALS` | The setup step. Without it the setup step installs nothing private |
+| `EWS_CREDENTIALS` | The setup step, which exports every key to the job, the command's step included. Without it no credential is exported and no registry auth is written |
 | `EWS_GCP__DEFAULT_KEY` | The `End-to-end` step only, as an environment overlay of the EWS configuration layer |
 | `EWS_GCP__PROJECT` | The `End-to-end` step only, as an environment overlay of the EWS configuration layer |
 
@@ -219,6 +221,8 @@ The single `e2e` job runs on `ubuntu-latest`:
 
 1. Checkout at `ref`.
 2. `setup-ews-ci` with `install-dependencies: "false"`, as `release.yml` calls it.
+   Nothing is synced before the command; a `uv run` inside it syncs the
+   project's default environment.
 3. `End-to-end`, with no `if:` because the command is required. The command and
    the two overlay secrets reach the step through `env:`. The step logs
    `<NAME>: set` or `<NAME>: not passed` for each secret, unsets one that is
@@ -258,5 +262,7 @@ repository secret.
 
 Job ordering, conditions and commands are read from the YAML. The data plan
 steps were first observed on a runner on 2026-09-05 in a purpose-built
-consuming repository; `release.yml` has not been observed here, and neither has `e2e.yml`,
-including its self-test, which runs only once pushed.
+consuming repository. `release.yml` was observed only in a consuming
+repository's run history ([README.md](README.md) § *Not verified*).
+`e2e-selftest.yml` ran green on this repository's pull request on 2026-10-07;
+the after-release trigger and a real end-to-end command were not run.
