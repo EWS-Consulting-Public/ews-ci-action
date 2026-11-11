@@ -50,6 +50,8 @@ measured every run and published on none unless the caller asks.
 action's `uv sync --all-extras` does not run. `uv run` still syncs the
 project's default environment, without extras, before it starts ruff, and the
 registry auth the action wrote is what lets that sync resolve private wheels.
+That sync runs on `lint-python-version` (`UV_PYTHON`), not on the repository's
+`.python-version`.
 
 `test` sets `UV_PYTHON` to its matrix entry for the whole job. uv otherwise
 chooses the interpreter from the repository's `.python-version` before the one
