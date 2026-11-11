@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: ci.yml, release.yml and e2e.yml - inputs, jobs, the data plan, and the conditions that gate them
-last-verified: 2026-10-07
+last-verified: 2026-11-11
 ---
 
 # The reusable workflows
@@ -43,13 +43,24 @@ measured every run and published on none unless the caller asks.
 | --- | --- | --- |
 | `check-skip` | always | Inspects the head commit message and emits `should-skip` |
 | `lint` | not skipped, `run-lint` | `uv run ruff check .` then `uv run ruff format --check .` |
-| `test` | not skipped, `run-tests` | Matrix over `python-versions`; the data plan steps when `data-plan` is set; `uv run pytest` with or without coverage; `fail-fast: false` |
-| `build` | not skipped, `run-build`, **after `lint` and `test`** | `uvx nox -s build` or `uv build --wheel`; uploads `dist/` |
+| `test` | not skipped, `run-tests` | Matrix over `python-versions`, each leg under its own version (`UV_PYTHON`); the data plan steps when `data-plan` is set; `uv run pytest` with or without coverage; `fail-fast: false` |
+| `build` | not skipped, `run-build`, **after `lint` and `test`** | No `uv sync`; `uvx nox -s build` or `uv build --wheel`; uploads `dist/` |
 
 `lint` calls the composite action with `install-dependencies: "false"`, so the
 action's `uv sync --all-extras` does not run. `uv run` still syncs the
 project's default environment, without extras, before it starts ruff, and the
 registry auth the action wrote is what lets that sync resolve private wheels.
+
+`test` sets `UV_PYTHON` to its matrix entry for the whole job. uv otherwise
+chooses the interpreter from the repository's `.python-version` before the one
+the action installed, so a repository pinning one version ran every leg on it,
+whatever the job was named, and a dependency with no wheel for that version was
+compiled from source in every leg.
+
+`build` also calls the action with `install-dependencies: "false"`. Building a
+wheel needs no project environment (`release.yml` builds the same way), and
+syncing there installed every extra, compiling anything without a wheel for
+`lint-python-version`.
 
 ### The data plan
 

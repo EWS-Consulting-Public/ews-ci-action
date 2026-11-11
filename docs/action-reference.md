@@ -1,7 +1,7 @@
 ---
 status: as-built
 covers: the setup-ews-ci composite action - inputs, what it exports to the job, and every file it writes
-last-verified: 2026-10-07
+last-verified: 2026-11-11
 ---
 
 # `setup-ews-ci` — what it does to the runner
@@ -27,7 +27,7 @@ steps:
 
 | Input | Default | Effect |
 | --- | --- | --- |
-| `python-version` | `"3.12"` | Passed to `uv python install` |
+| `python-version` | `"3.12"` | Passed to `uv python install`. It does not choose the interpreter the later `uv sync` and `uv run` use: a repository's `.python-version` wins unless `UV_PYTHON` is set, which `ci.yml`'s `test` job sets from its matrix |
 | `install-dependencies` | `"true"` | Run the `uv sync` step. String, not boolean — quote it |
 | `ews-credentials` | `''` | The `EWS_CREDENTIALS` JSON object. Without it, nothing credential-derived is exported or written |
 | `ews-credentials-keys` | `''` | The `EWS_CREDENTIALS_KEYS` JSON array. When given, the step **fails** if the object lacks any key it names |

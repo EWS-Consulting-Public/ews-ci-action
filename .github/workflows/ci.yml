@@ -131,6 +131,11 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ${{ fromJSON(inputs.python-versions) }}
+    # uv picks the interpreter from a repository's .python-version before the one the
+    # action installed, so without this every leg ran on the pinned version. Naming the
+    # matrix version makes each leg sync and test the Python it is named after.
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     steps:
       - uses: actions/checkout@v4
 
@@ -244,10 +249,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No project environment: `uv build --wheel` and a nox build session that runs it
+      # need none, as release.yml builds. Syncing here installed every extra just to
+      # build a wheel, compiling any dependency without a wheel for this Python.
       - uses: EWS-Consulting-Public/ews-ci-action/.github/actions/setup-ews-ci@v1
         with:
           python-version: ${{ inputs.lint-python-version }}
-          install-dependencies: "true"
+          install-dependencies: "false"
           ews-credentials: ${{ secrets.EWS_CREDENTIALS }}
           ews-credentials-keys: ${{ inputs.ews-credentials-keys }}
 
